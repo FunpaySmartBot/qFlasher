@@ -411,24 +411,15 @@ class UniversalFlipperManager {
     }
 
     getUniversalCommands() {
-        return [
-            'system_get_info', 'system_info', 'device_info', 'info',
-            'power_get_info', 'power_info', 'battery_info', 'power_status',
-            'storage_info', 'sd_info', 'fs_info', 'storage_status',
-            'storage_list', 'storage_mkdir', 'storage_touch', 'storage_remove', 'storage_stat'
-        ];
+        return ['storage_list','storage_mkdir','storage_touch','storage_remove','storage_stat','system_get_info','system_info','power_get_info','storage_info'];
     }
 
     log(type, msg) {
-        const time = new Date().toLocaleTimeString([],{hour: '2-digit', minute:'2-digit', second:'2-digit'});
+        const time = new Date().toLocaleTimeString([],{hour:'2-digit',minute:'2-digit',second:'2-digit'});
         const consoleEl = document.getElementById('console');
         const line = document.createElement('div');
         line.className = 'log-line';
-        line.innerHTML = `
-            <span class="log-time">${time}</span>
-            <span class="log-type log-${type}">${type}</span>
-            <span>${msg}</span>
-        `;
+        line.innerHTML = `<span class="log-time">${time}</span><span class="log-type log-${type}">${type}</span><span>${msg}</span>`;
         consoleEl.appendChild(line);
         consoleEl.scrollTop = consoleEl.scrollHeight;
         console.log(`[${time}] [${type}] ${msg}`);
@@ -439,77 +430,57 @@ class UniversalFlipperManager {
         t.className = `toast ${type}`;
         t.textContent = msg;
         document.getElementById('toastContainer').appendChild(t);
-        setTimeout(()=>t.classList.add('show'), 50);
-        setTimeout(()=>{
-            t.classList.remove('show');
-            setTimeout(()=>t.remove(), 300);
-        }, 3000);
+        setTimeout(()=>t.classList.add('show'),50);
+        setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300);},3000);
     }
 
     async rpc(cmd) {
-        if (!this.writer) {
-            this.log('error', 'No writer - not connected');
-            return;
-        }
+        if (!this.writer) {this.log('error','No writer - not connected');return;}
         const id = this.sequence++;
-        const full = JSON.stringify({...cmd, id}) + '\n';
-        this.pending.set(id, cmd.method);
+        const full = JSON.stringify({...cmd,id})+'\n';
+        this.pending.set(id,cmd.method);
         const enc = new TextEncoder();
         await this.writer.write(enc.encode(full));
-        this.log('rpc', `→ ${cmd.method}`);
+        this.log('rpc',`→ ${cmd.method}`);
     }
 
-    parseMomentumResponse(line) {
+    parseResponse(line) {
         try {
             const resp = JSON.parse(line);
-            if (resp.jsonrpc === '2.0') return resp;
-            
-            if (resp.method === 'storage_list' || resp.result?.files) {
-                return { id: 0, result: resp.result || resp, jsonrpc: '2.0' };
-            }
+            if (resp.jsonrpc==='2.0') return resp;
+            if (resp.result?.files || resp.files) return {id:0,result:resp.result||resp,jsonrpc:'2.0'};
             return null;
-        } catch(e) {
-            return null;
-        }
+        } catch(e) {return null;}
     }
 
     async handle(resp) {
         const method = this.pending.get(resp.id);
         this.pending.delete(resp.id);
-        
         if (resp.error) {
-            this.log('error', `${method || 'unknown'}: ${resp.error.message}`);
-            if (method === 'storage_list') {
-                this.showFileListError('Failed to load directory');
-            }
+            this.log('error',`${method||'unknown'}: ${resp.error.message||resp.error}`);
+            if (method==='storage_list') this.showFileListError('Failed to load directory');
             return;
         }
-        this.log('rpc', `← ${method || 'storage_list'} OK`);
-
-        switch(method || resp.method) {
+        this.log('rpc',`← ${method||'storage_list'} OK`);
+        switch(method||'storage_list') {
             case 'storage_list':
-                this.files = resp.result?.files || resp.result || resp || [];
+                this.files = resp.result?.files||resp.result||resp||[];
                 this.render();
                 break;
             case 'system_get_info':
             case 'system_info':
             case 'device_info':
             case 'info':
-                this.deviceInfo = {...this.deviceInfo, ...resp.result};
+                this.deviceInfo = {...this.deviceInfo,...resp.result};
                 this.updateDeviceInfo();
                 this.detectFirmware();
                 break;
             case 'power_get_info':
             case 'power_info':
-            case 'battery_info':
-            case 'power_status':
                 this.batteryInfo = resp.result;
                 this.updateBattery(resp.result);
                 break;
             case 'storage_info':
-            case 'sd_info':
-            case 'fs_info':
-            case 'storage_status':
                 this.storageInfo = resp.result;
                 this.updateStorageInfo();
                 break;
@@ -519,79 +490,64 @@ class UniversalFlipperManager {
     detectFirmware() {
         const info = this.deviceInfo;
         let fwType = 'Unknown';
-        
         if (info.name?.toLowerCase().includes('momentum')) fwType = 'Momentum';
         else if (info.name?.toLowerCase().includes('unleashed')) fwType = 'Unleashed';
         else if (info.name?.toLowerCase().includes('roguemaster')) fwType = 'RogueMaster';
         else if (info.version_string?.includes('qFlipper')) fwType = 'qFlipper';
-        else if (info.api_version >= 50) fwType = 'Official';
-        else if (info.name === 'Flipper Zero') fwType = 'Standard';
-        
+        else if (info.api_version>=50) fwType = 'Official';
+        else fwType = 'Standard';
         this.firmwareType = fwType;
         const badge = document.getElementById('firmwareBadge');
         badge.textContent = fwType;
         badge.style.display = 'block';
-        this.log('success', `Firmware detected: ${fwType}`);
+        this.log('success',`Firmware: ${fwType}`);
     }
 
     showFileListError(msg) {
-        document.getElementById('fileList').innerHTML = 
-            `<div style="padding:60px;text-align:center;color:var(--text-2)">${msg}</div>`;
+        document.getElementById('fileList').innerHTML = `<div style="padding:60px;text-align:center;color:var(--text-2)">${msg}</div>`;
     }
 
     showLoading() {
-        document.getElementById('fileList').innerHTML = 
-            '<div class="loading"><div class="spinner"></div>Loading...</div>';
+        document.getElementById('fileList').innerHTML = '<div class="loading"><div class="spinner"></div>Loading...</div>';
     }
 
     async connect() {
         try {
             if (!navigator.serial) throw new Error('Web Serial API not supported');
             await this.disconnect();
-            
             this.port = await navigator.serial.requestPort();
-            await this.port.open({ baudRate: 115200 });
+            await this.port.open({baudRate:115200});
             this.reader = this.port.readable.getReader();
             this.writer = this.port.writable.getWriter();
-            
             this.connected = true;
             this.updateStatus(true);
             this.toast('✅ Connected!');
-            
-            await this.rpc({method: 'storage_list', params: {path: '/'}});
+            await this.rpc({method:'storage_list',params:{path:'/'}});
             this.readLoop();
         } catch(e) {
-            this.log('error', `Connect: ${e.message}`);
-            this.toast(`❌ ${e.message}`, 'error');
+            this.log('error',`Connect: ${e.message}`);
+            this.toast(`❌ ${e.message}`,'error');
             await this.disconnect();
         }
     }
 
     async readLoop() {
         this.readLoopActive = true;
-        while (this.connected && this.reader && this.readLoopActive) {
+        while (this.connected&&this.reader&&this.readLoopActive) {
             try {
-                const {value, done} = await this.reader.read();
+                const {value,done} = await this.reader.read();
                 if (done) break;
-                
-                const chunk = new TextDecoder().decode(value, {stream: true});
+                const chunk = new TextDecoder().decode(value,{stream:true});
                 this.buffer += chunk;
-                
                 let lines = this.buffer.split('\n');
-                this.buffer = lines.pop() || '';
-                
-                for (let line of lines.filter(l => l.trim())) {
-                    const resp = this.parseMomentumResponse(line);
-                    if (resp) {
-                        await this.handle(resp);
-                    } else if (line.length > 100) {
-                        this.log('info', `Raw: ${line.substring(0, 100)}...`);
-                    }
+                this.buffer = lines.pop()||'';
+                for (let line of lines.filter(l=>l.trim())) {
+                    const resp = this.parseResponse(line);
+                    if (resp) await this.handle(resp);
+                    else if (line.length>50) this.log('info',`Raw: ${line.substring(0,80)}...`);
                 }
             } catch(e) {
-                if (this.connected) {
-                    this.log('error', `Read error: ${e.message}`);
-                }
+                if (this.connected) this.log('error',`Read: ${e.message}`);
                 break;
             }
         }
@@ -600,28 +556,14 @@ class UniversalFlipperManager {
     async disconnect() {
         this.connected = false;
         this.readLoopActive = false;
-        
-        if (this.reader) {
-            try { await this.reader.cancel(); } catch(e) {}
-            this.reader = null;
-        }
-        if (this.writer) {
-            try { await this.writer.close(); } catch(e) {}
-            this.writer = null;
-        }
-        if (this.port) {
-            try { await this.port.close(); } catch(e) {}
-            this.port = null;
-        }
-        
+        if (this.reader) {try{await this.reader.cancel();}catch(e){}this.reader=null;}
+        if (this.writer) {try{await this.writer.close();}catch(e){}this.writer=null;}
+        if (this.port) {try{await this.port.close();}catch(e){}this.port=null;}
         this.pending.clear();
         this.buffer = '';
-        this.deviceInfo = {};
-        this.batteryInfo = {};
-        this.storageInfo = {};
         this.updateStatus(false);
         this.resetDeviceInfo();
-        this.log('info', 'Disconnected');
+        this.log('info','Disconnected');
         this.showFileListError('Disconnected');
     }
 
@@ -638,7 +580,7 @@ class UniversalFlipperManager {
         if (!this.connected) return;
         const p = this.path.join('/');
         this.showLoading();
-        await this.rpc({method: 'storage_list', params: {path: p}});
+        await this.rpc({method:'storage_list',params:{path:p}});
     }
 
     render() {
@@ -647,36 +589,26 @@ class UniversalFlipperManager {
             list.innerHTML = '<div style="padding:60px;text-align:center;color:var(--text-2)">Empty folder</div>';
             return;
         }
-        list.innerHTML = this.files.map(f => {
-            const name = f.name || f;
-            const type = f.type === 'folder' || name.endsWith('/') ? 'folder' : 'file';
-            const size = f.size || 0;
-            
-            const icon = type === 'folder' ? '📁' : 
-                        /\.(log|txt|cfg)$/i.test(name) ? '📋' : 
-                        /\.(bin|img)$/i.test(name) ? '⚡' :
-                        '📄';
-            return `<div class="file-row ${type}" data-name="${name}" 
-                        ondblclick="qflasher.open('${name.replace(/'/g, "\\'")}')" onclick="qflasher.select(event,this)"
-                        draggable="true">
-                        <div class="icon ${type}">${icon}</div>
-                        <div title="${name}">${name}</div>
-                        <div>${size?(size/1024).toFixed(0)+'K':'-'}</div>
-                        <div>-</div>
-                    </div>`;
+        list.innerHTML = this.files.map(f=>{
+            const name = f.name||f;
+            const type = f.type==='folder'||name.endsWith('/') ? 'folder' : 'file';
+            const size = f.size||0;
+            const icon = type==='folder' ? '📁' : /\.(log|txt|cfg)$/i.test(name)?'📋':/\.(bin|img)$/i.test(name)?'⚡':'📄';
+            return `<div class="file-row ${type}" data-name="${name}" ondblclick="qflasher.open('${name.replace(/'/g, "\\'")}')" onclick="qflasher.select(event,this)" draggable="true">
+                <div class="icon ${type}">${icon}</div>
+                <div title="${name}">${name}</div>
+                <div>${size?(size/1024).toFixed(0)+'K':'-'}</div><div>-</div>
+            </div>`;
         }).join('');
     }
 
-    select(e, el) {
-        if (e.ctrlKey || e.metaKey) {
+    select(e,el) {
+        if (e.ctrlKey||e.metaKey) {
             el.classList.toggle('selected');
-            if (el.classList.contains('selected')) {
-                this.selected.add(el.dataset.name);
-            } else {
-                this.selected.delete(el.dataset.name);
-            }
+            if (el.classList.contains('selected')) this.selected.add(el.dataset.name);
+            else this.selected.delete(el.dataset.name);
         } else {
-            document.querySelectorAll('.file-row').forEach(r => r.classList.remove('selected'));
+            document.querySelectorAll('.file-row').forEach(r=>r.classList.remove('selected'));
             el.classList.add('selected');
             this.selected.clear();
             this.selected.add(el.dataset.name);
@@ -685,128 +617,90 @@ class UniversalFlipperManager {
     }
 
     updateBtns() {
-        const ok = this.selected.size > 0;
-        document.getElementById('downloadBtn').disabled = !ok;
-        document.getElementById('deleteBtn').disabled = !ok;
+        const ok = this.selected.size>0;
+        document.getElementById('downloadBtn').disabled=!ok;
+        document.getElementById('deleteBtn').disabled=!ok;
     }
 
     async open(name) {
-        const f = this.files.find(x => (x.name || x) === name);
-        if (f?.type === 'folder' || name.endsWith('/')) {
-            this.path.push(name.replace('/', ''));
+        const f = this.files.find(x=>(x.name||x)===name);
+        if (f?.type==='folder'||name.endsWith('/')) {
+            this.path.push(name.replace('/',''));
             this.updatePath();
             await this.ls();
         }
     }
 
     goTo(index) {
-        this.path = this.path.slice(0, index + 1);
+        this.path = this.path.slice(0,index+1);
         this.updatePath();
         this.ls();
     }
 
     updatePath() {
-        document.getElementById('pathDisplay').innerHTML = 
-            this.path.map((p,i)=>`<span onclick="qflasher.goTo(${i})">${p}</span>`).join('/');
+        document.getElementById('pathDisplay').innerHTML = this.path.map((p,i)=>`<span onclick="qflasher.goTo(${i})">${p}</span>`).join('/');
     }
 
     updateDeviceInfo() {
-        const name = this.deviceInfo.name || 
-                    this.deviceInfo.hostname || 
-                    this.deviceInfo.version_string || 
-                    this.deviceInfo.device_name ||
-                    'Flipper Zero';
+        const name = this.deviceInfo.name||this.deviceInfo.hostname||this.deviceInfo.version_string||'Flipper Zero';
         document.getElementById('deviceName').textContent = name;
-
-        const version = this.deviceInfo.version || 
-                       this.deviceInfo.version_string || 
-                       this.deviceInfo.api_version || 
-                       this.deviceInfo.fw_version ||
-                       this.deviceInfo.firmware_version ||
-                       'Unknown';
+        const version = this.deviceInfo.version||this.deviceInfo.version_string||this.deviceInfo.api_version||'Unknown';
         document.getElementById('versionInfo').textContent = version;
     }
 
     updateBattery(info) {
         if (!info) return;
-        
         let batteryText = 'Unknown';
-        let batteryClass = '';
-        
-        if (info.charge !== undefined) {
-            batteryText = `${info.charge}%`;
-            if (info.charge < 20) batteryClass = 'battery-critical';
-            else if (info.charge < 30) batteryClass = 'battery-low';
-        } else if (info.voltage !== undefined) {
-            batteryText = `${info.voltage.toFixed(1)}V`;
-        } else if (info.battery_level !== undefined) {
-            batteryText = `${info.battery_level}%`;
-            if (info.battery_level < 20) batteryClass = 'battery-critical';
-            else if (info.battery_level < 30) batteryClass = 'battery-low';
-        } else if (info.level !== undefined) {
-            batteryText = `${info.level}%`;
-            if (info.level < 20) batteryClass = 'battery-critical';
-            else if (info.level < 30) batteryClass = 'battery-low';
-        }
-        
+        if (info.charge!==undefined) batteryText = `${info.charge}%`;
+        else if (info.voltage!==undefined) batteryText = `${info.voltage.toFixed(1)}V`;
+        else if (info.battery_level!==undefined) batteryText = `${info.battery_level}%`;
         const el = document.getElementById('batteryInfo');
         el.textContent = batteryText;
-        el.className = `stat-value ${batteryClass}`;
     }
 
     updateStorageInfo() {
         const info = this.storageInfo;
         let storageText = '-';
-        
-        if (info.total_space !== undefined && info.free_space !== undefined) {
-            const totalMB = (info.total_space / 1024 / 1024).toFixed(1);
-            const freeMB = (info.free_space / 1024 / 1024).toFixed(1);
-            storageText = `${freeMB}MB / ${totalMB}MB free`;
-        } else if (info.free_space !== undefined) {
-            const freeMB = (info.free_space / 1024 / 1024).toFixed(1);
+        if (info.free_space!==undefined) {
+            const freeMB = (info.free_space/1024/1024).toFixed(1);
             storageText = `${freeMB}MB free`;
         }
-        
         document.getElementById('storageInfo').textContent = storageText;
     }
 
     async mkdir(name) {
-        const p = this.path.join('/') + '/' + name;
-        await this.rpc({method: 'storage_mkdir', params: {path: p}});
+        const p = this.path.join('/')+'/'+name;
+        await this.rpc({method:'storage_mkdir',params:{path:p}});
         this.toast(`📁 ${name} created`);
-        setTimeout(() => this.ls(), 500);
+        setTimeout(()=>this.ls(),500);
     }
 
     async touch(name) {
-        const p = this.path.join('/') + '/' + name;
-        await this.rpc({method: 'storage_touch', params: {path: p}});
+        const p = this.path.join('/')+'/'+name;
+        await this.rpc({method:'storage_touch',params:{path:p}});
         this.toast(`📄 ${name} created`);
-        setTimeout(() => this.ls(), 500);
+        setTimeout(()=>this.ls(),500);
     }
 
     async delete(name) {
-        const p = this.path.join('/') + '/' + name;
-        await this.rpc({method: 'storage_remove', params: {path: p}});
+        const p = this.path.join('/')+'/'+name;
+        await this.rpc({method:'storage_remove',params:{path:p}});
         this.toast(`🗑️ ${name} deleted`);
     }
 
     async deleteSelected() {
         if (!this.selected.size) return;
-        if (!confirm(`Delete ${this.selected.size} item${this.selected.size > 1 ? 's' : ''}?`)) return;
-        for (let name of [...this.selected]) {
-            await this.delete(name);
-        }
+        if (!confirm(`Delete ${this.selected.size} item${this.selected.size>1?'s':''}?`)) return;
+        for (let name of [...this.selected]) await this.delete(name);
         this.selected.clear();
         this.updateBtns();
-        setTimeout(() => this.ls(), 500);
+        setTimeout(()=>this.ls(),500);
     }
 
     newModal(type) {
-        document.getElementById('modalTitle').textContent = 
-            `📁 New ${type === 'folder' ? 'Folder' : 'File'}`;
+        document.getElementById('modalTitle').textContent = `📁 New ${type==='folder'?'Folder':'File'}`;
         document.getElementById('modalInput').dataset.type = type;
-        document.getElementById('modalInput').placeholder = 
-            type === 'folder' ? 'myfolder' : 'file.txt';
+        document.getElementById('modalInput').placeholder = type==='folder'?'myfolder':'file.txt';
         document.getElementById('modalInput').value = '';
         document.getElementById('newModal').style.display = 'flex';
         document.getElementById('modalInput').focus();
@@ -814,19 +708,11 @@ class UniversalFlipperManager {
 
     confirmModal() {
         const name = document.getElementById('modalInput').value.trim();
-        if (!name) return this.toast('Enter a name', 'error');
+        if (!name) return this.toast('Enter a name','error');
         const type = document.getElementById('modalInput').dataset.type;
-        if (type === 'folder') this.mkdir(name);
+        if (type==='folder') this.mkdir(name);
         else this.touch(name);
         closeModal();
-    }
-
-    async upload(files) {
-        for (let file of Array.from(files)) {
-            const p = this.path.join('/') + '/' + file.name;
-            this.log('info', `📤 Uploading ${file.name} (${(file.size/1024).toFixed(1)}K)`);
-        }
-        setTimeout(() => this.ls(), 1000);
     }
 
     updateStatus(connected) {
@@ -834,108 +720,77 @@ class UniversalFlipperManager {
         const dot = document.getElementById('statusDot');
         const text = document.getElementById('statusText');
         const btn = document.getElementById('connectBtn');
-        
-        status.classList.toggle('connected', connected);
-        dot.classList.toggle('connected', connected);
-        text.textContent = connected ? 'Connected' : 'Disconnected';
-        btn.textContent = connected ? '🔌 Disconnect' : '🔌 Connect Device';
-        btn.classList.toggle('connected', connected);
+        status.classList.toggle('connected',connected);
+        dot.classList.toggle('connected',connected);
+        text.textContent = connected?'Connected':'Disconnected';
+        btn.textContent = connected?'🔌 Disconnect':'🔌 Connect Device';
+        btn.classList.toggle('connected',connected);
     }
 
     toggleConsoleSize() {
         this.consoleExpanded = !this.consoleExpanded;
         const app = document.getElementById('appContainer');
         const toggleBtn = document.getElementById('toggleConsoleSize');
-        
         if (this.consoleExpanded) {
             app.classList.add('console-expanded');
             toggleBtn.textContent = '🗗';
-            this.log('info', 'Console expanded');
         } else {
             app.classList.remove('console-expanded');
             toggleBtn.textContent = '⬜';
-            this.log('info', 'Console normal');
         }
     }
 
     init() {
-        document.getElementById('connectBtn').onclick = () => 
-            this.connected ? this.disconnect() : this.connect();
-
-        document.getElementById('newFolder').onclick = () => this.newModal('folder');
-        document.getElementById('newFile').onclick = () => this.newModal('file');
-        
-        document.getElementById('uploadBtn').onclick = () => {
+        document.getElementById('connectBtn').onclick = ()=>this.connected?this.disconnect():this.connect();
+        document.getElementById('newFolder').onclick = ()=>this.newModal('folder');
+        document.getElementById('newFile').onclick = ()=>this.newModal('file');
+        document.getElementById('uploadBtn').onclick = ()=>{
             const inp = document.createElement('input');
-            inp.type = 'file'; inp.multiple = true;
-            inp.onchange = e => this.upload(e.target.files);
+            inp.type = 'file';inp.multiple = true;
+            inp.onchange = e=>this.upload(e.target.files);
             inp.click();
         };
-        
-        document.getElementById('downloadBtn').onclick = () => this.download();
-        document.getElementById('refreshBtn').onclick = () => this.ls();
-        document.getElementById('deleteBtn').onclick = () => this.deleteSelected();
-
-        document.getElementById('sendCmd').onclick = () => this.exec();
-        document.getElementById('consoleInput').onkeydown = e => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                this.exec();
-            }
+        document.getElementById('downloadBtn').onclick = ()=>this.download();
+        document.getElementById('refreshBtn').onclick = ()=>this.ls();
+        document.getElementById('deleteBtn').onclick = ()=>this.deleteSelected();
+        document.getElementById('sendCmd').onclick = ()=>this.exec();
+        document.getElementById('consoleInput').onkeydown = e=>{
+            if (e.key==='Enter'&&!e.shiftKey) {e.preventDefault();this.exec();}
         };
-        document.getElementById
-
-continu
-
-Copy message
-Edit message
-
-javascript
-
-Copy code
-        document.getElementById('clearConsole').onclick = () => 
-            document.getElementById('console').innerHTML = '';
-        
-        document.getElementById('toggleConsoleSize').onclick = () => this.toggleConsoleSize();
-
-        document.getElementById('modalConfirm').onclick = () => this.confirmModal();
-
-        document.addEventListener('keydown', e => {
-            if (e.ctrlKey || e.metaKey) {
-                if (e.key === 'n') {
-                    e.preventDefault();
-                    this.newModal('folder');
-                }
-                if (e.key === 'e') {
-                    e.preventDefault();
-                    this.newModal('file');
-                }
+        document.getElementById('clearConsole').onclick = ()=>document.getElementById('console').innerHTML='';
+        document.getElementById('toggleConsoleSize').onclick = ()=>this.toggleConsoleSize();
+        document.getElementById('modalConfirm').onclick = ()=>this.confirmModal();
+        document.addEventListener('keydown',e=>{
+            if (e.ctrlKey||e.metaKey) {
+                if (e.key==='n') {e.preventDefault();this.newModal('folder');}
+                if (e.key==='e') {e.preventDefault();this.newModal('file');}
             }
         });
-
-        this.log('info', 'qFlasher v2.1 - Momentum Compatible');
-        this.log('info', 'Connect your Momentum Flipper Zero');
+        this.log('info','qFlasher v2.2 - Universal');
+        this.log('info','All firmwares supported');
     }
 
     async exec() {
         const cmd = document.getElementById('consoleInput').value.trim();
-        if (!cmd || !this.connected) {
-            this.toast('Connect first', 'error');
-            return;
-        }
+        if (!cmd||!this.connected) {this.toast('Connect first','error');return;}
         try {
             const rpc = JSON.parse(cmd);
             await this.rpc(rpc);
         } catch(e) {
-            this.log('error', `Invalid JSON: ${e.message}`);
+            this.log('error',`JSON: ${e.message}`);
         }
         document.getElementById('consoleInput').value = '';
     }
 
+    async upload(files) {
+        for (let file of Array.from(files)) this.log('info',`📤 ${file.name} (${(file.size/1024).toFixed(1)}K)`);
+        setTimeout(()=>this.ls(),1000);
+    }
+
     async download() {
-        if (this.selected.size !== 1) return this.toast('Select 1 file', 'error');
+        if (this.selected.size!==1) return this.toast('Select 1 file','error');
         const name = [...this.selected][0];
-        this.toast(`📥 ${name} (download WIP)`);
+        this.toast(`📥 ${name} (WIP)`);
     }
 }
 
@@ -944,7 +799,6 @@ const qflasher = new UniversalFlipperManager();
 function closeModal() {
     document.getElementById('newModal').style.display = 'none';
 }
-
 </script>
 </body>
 </html>
