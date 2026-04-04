@@ -453,20 +453,23 @@ class qFlasher {
                 this.files = resp.result?.files || resp.result || [];
                 this.render();
                 break;
-            case 'system_get_info':
-            case 'system_info':
-                this.deviceInfo = {...this.deviceInfo, ...resp.result};
-                this.updateDeviceInfo();
-                break;
-            case 'power_get_info':
-            case 'power_info':
-                this.batteryInfo = resp.result;
-                this.updateBattery(resp.result);
-                break;
-            case 'storage_info':
-                this.storageInfo = resp.result;
-                this.updateStorageInfo();
-                break;
+               case 'system_get_info':
+               case 'system_info':
+case 'device_info':           // 🔥 Momentum Fix
+    this.deviceInfo = {...this.deviceInfo, ...resp.result};
+    this.updateDeviceInfo();
+    break;
+case 'power_get_info':
+case 'power_info':
+case 'battery_info':          // 🔥 Momentum  Fix
+    this.batteryInfo = resp.result;
+    this.updateBattery(resp.result);
+    break;
+case 'storage_info':
+case 'sd_info':               // 🔥 Momentum Fix
+    this.storageInfo = resp.result;
+    this.updateStorageInfo();
+    break;
         }
     }
 
@@ -495,10 +498,13 @@ class qFlasher {
         this.toast('✅ Connected!');
         
         await Promise.all([
-            this.rpc({method: 'system_get_info'}),
-            this.rpc({method: 'power_get_info'}),
-            this.rpc({method: 'storage_info'})
-        ]);
+    this.rpc({method: 'system_get_info'}),
+    this.rpc({method: 'device_info'}),
+    this.rpc({method: 'power_get_info'}),
+    this.rpc({method: 'battery_info'}),
+    this.rpc({method: 'storage_info'}),
+    this.rpc({method: 'sd_info'})
+]);
         
         setTimeout(() => this.ls(), 500);
         this.readLoop();
