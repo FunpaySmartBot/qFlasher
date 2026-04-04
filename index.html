@@ -487,12 +487,7 @@ class qFlasher {
         
         await this.disconnect();
         
-        this.port = await navigator.serial.requestPort({
-            filters: [
-                { usbVendorId: 0x20a0 },
-                { usbProductId: 0x42ed }
-            ]
-        });
+    this.port = await navigator.serial.requestPort();
         
         const info = this.port.getInfo();
         this.log('info', `Port found: VID=${info.usbVendorId?.toString(16)}, PID=${info.usbProductId?.toString(16)}`);
