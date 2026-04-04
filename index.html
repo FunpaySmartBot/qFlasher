@@ -431,6 +431,7 @@ class UniversalFlipperManager {
         `;
         consoleEl.appendChild(line);
         consoleEl.scrollTop = consoleEl.scrollHeight;
+        console.log(`[${time}] [${type}] ${msg}`);
     }
 
     toast(msg, type='success') {
@@ -458,6 +459,20 @@ class UniversalFlipperManager {
         this.log('rpc', `→ ${cmd.method}`);
     }
 
+    parseMomentumResponse(line) {
+        try {
+            const resp = JSON.parse(line);
+            if (resp.jsonrpc === '2.0') return resp;
+            
+            if (resp.method === 'storage_list' || resp.result?.files) {
+                return { id: 0, result: resp.result || resp, jsonrpc: '2.0' };
+            }
+            return null;
+        } catch(e) {
+            return null;
+        }
+    }
+
     async handle(resp) {
         const method = this.pending.get(resp.id);
         this.pending.delete(resp.id);
@@ -469,11 +484,11 @@ class UniversalFlipperManager {
             }
             return;
         }
-        this.log('rpc', `← ${method} OK`);
+        this.log('rpc', `← ${method || 'storage_list'} OK`);
 
-        switch(method) {
+        switch(method || resp.method) {
             case 'storage_list':
-                this.files = resp.result?.files || resp.result || [];
+                this.files = resp.result?.files || resp.result || resp || [];
                 this.render();
                 break;
             case 'system_get_info':
@@ -543,12 +558,7 @@ class UniversalFlipperManager {
             this.updateStatus(true);
             this.toast('✅ Connected!');
             
-            const commands = this.getUniversalCommands();
-            for (let cmd of commands.slice(0, 6)) {
-                this.rpc({method: cmd});
-            }
-            
-            setTimeout(() => this.ls(), 1000);
+            await this.rpc({method: 'storage_list', params: {path: '/'}});
             this.readLoop();
         } catch(e) {
             this.log('error', `Connect: ${e.message}`);
@@ -571,15 +581,11 @@ class UniversalFlipperManager {
                 this.buffer = lines.pop() || '';
                 
                 for (let line of lines.filter(l => l.trim())) {
-                    try {
-                        const resp = JSON.parse(line);
-                        if (resp.jsonrpc === '2.0' && (resp.id !== undefined || resp.result !== undefined || resp.method)) {
-                            await this.handle(resp);
-                        }
-                    } catch(e) {
-                        if (line.length > 0) {
-                            this.log('info', `Raw: ${line.substring(0, 100)}...`);
-                        }
+                    const resp = this.parseMomentumResponse(line);
+                    if (resp) {
+                        await this.handle(resp);
+                    } else if (line.length > 100) {
+                        this.log('info', `Raw: ${line.substring(0, 100)}...`);
                     }
                 }
             } catch(e) {
@@ -588,13 +594,6 @@ class UniversalFlipperManager {
                 }
                 break;
             }
-        }
-        
-        if (this.connected) {
-            this.log('warn', 'Connection lost, attempting reconnect...');
-            setTimeout(() => {
-                if (this.connected) this.connect();
-            }, 3000);
         }
     }
 
@@ -762,15 +761,10 @@ class UniversalFlipperManager {
         if (info.total_space !== undefined && info.free_space !== undefined) {
             const totalMB = (info.total_space / 1024 / 1024).toFixed(1);
             const freeMB = (info.free_space / 1024 / 1024).toFixed(1);
-            const usedMB = (totalMB - freeMB).toFixed(1);
-            const usedPercent = ((1 - info.free_space / info.total_space) * 100).toFixed(0);
-            storageText = `${freeMB}MB / ${totalMB}MB free (${usedPercent}% used)`;
+            storageText = `${freeMB}MB / ${totalMB}MB free`;
         } else if (info.free_space !== undefined) {
             const freeMB = (info.free_space / 1024 / 1024).toFixed(1);
             storageText = `${freeMB}MB free`;
-        } else if (info.total_bytes !== undefined) {
-            const totalMB = (info.total_bytes / 1024 / 1024).toFixed(1);
-            storageText = `${totalMB}MB total`;
         }
         
         document.getElementById('storageInfo').textContent = storageText;
@@ -889,6 +883,16 @@ class UniversalFlipperManager {
                 this.exec();
             }
         };
+        document.getElementById
+
+continu
+
+Copy message
+Edit message
+
+javascript
+
+Copy code
         document.getElementById('clearConsole').onclick = () => 
             document.getElementById('console').innerHTML = '';
         
@@ -909,9 +913,8 @@ class UniversalFlipperManager {
             }
         });
 
-        this.log('info', 'qFlasher v2.0 - Universal File Manager');
-        this.log('info', 'Compatible: qFlipper, Momentum, Unleashed, RogueMaster, Official');
-        this.log('info', 'Click "Connect Device" to begin');
+        this.log('info', 'qFlasher v2.1 - Momentum Compatible');
+        this.log('info', 'Connect your Momentum Flipper Zero');
     }
 
     async exec() {
@@ -932,8 +935,6 @@ class UniversalFlipperManager {
     async download() {
         if (this.selected.size !== 1) return this.toast('Select 1 file', 'error');
         const name = [...this.selected][0];
-        const path = this.path.join('/') + '/' + name;
-        await this.rpc({method: 'storage_stat', params: {path}});
         this.toast(`📥 ${name} (download WIP)`);
     }
 }
@@ -943,6 +944,7 @@ const qflasher = new UniversalFlipperManager();
 function closeModal() {
     document.getElementById('newModal').style.display = 'none';
 }
+
 </script>
 </body>
 </html>
