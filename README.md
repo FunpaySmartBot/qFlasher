@@ -1,3 +1,4 @@
+markdown
 # qFlasher README - COMPLETE SINGLE FILE
 
 qFlasher Logo: https://raw.githubusercontent.com/FunpaySmartBot/qFlasher/refs/heads/main/logo.png
@@ -5,20 +6,25 @@ qFlasher Logo: https://raw.githubusercontent.com/FunpaySmartBot/qFlasher/refs/he
 qFlasher - Flipper Zero Web File Manager + RPC Console
 
 FEATURES:
+```
 File: 📁 New Folder | 📄 New File | ⬆️ Upload | 🗑️ Delete | 🔄 Refresh
 Info: 🔋 Battery | 🆔 Name | 📊 Space | 🛠️ Version
 Console: 📡 RPC | 🔄 Expand (⬜/🗗) | 📋 Clear
+```
 
 SHORTCUTS:
+```
 Ctrl+N = New Folder | Ctrl+E = New File | Ctrl+Click = Multi-select
-
+```
 QUICK START:
+```
 1. Flipper Zero -> USB -> Chrome/Edge
 2. Click 🔌 Connect Device
 3. Browse files / console commands
-
-BROWSERS: Chrome 80+ ✅ | Edge 79+ ✅ | Firefox ❌ | Safari ❌
-FIRMWARES: qFlipper✅ Momentum✅ Unleashed✅ RogueMaster✅ ANY RPC✅
+```
+# BROWSERS:
+Chrome 80+ ✅ | Edge 79+ ✅ | Firefox ❌ | Safari ❌
+FIRMWARES: qFlipper✅ Momentum🟠 Unleashed✅ RogueMaster✅ ANY RPC✅
 
 FILE OPERATIONS:
 New Folder (📁) -> Creates directory
