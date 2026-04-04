@@ -6,7 +6,7 @@ markdown
 **qFlasher** is a modern, web-based file manager for Flipper Zero. Connect via Web Serial, browse files, manage storage, and execute RPC commands with a beautiful dark UI.
 
 ## ✨ **Features**
-File Management
+```File Management
 
 Device Info
 
@@ -41,6 +41,7 @@ Console
 🔌 Connect/Disconnect
 
 🎮 Keyboard Shortcuts
+```
 
 ```
 Ctrl/Cmd + N  → New Folder
@@ -62,12 +63,15 @@ Double-click to open
 Ctrl+Click for multi-select
 Execute RPC Commands
 ```
+
 ```json
 
-Copy code
+
 {"method":"storage_list","params":{"path":"/"}}    // List root
 {"method":"system_info"}                           // Device info
-{"method":"power_info"}                            // Battery
+{"method":"power_info"}                         // Battery'
+```
+
 📱 Supported Browsers
 Browser
 
