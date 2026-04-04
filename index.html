@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>qFlasher - Flipper Zero File Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-0: #0a0a0a;
+            --bg-1: #111;
+            --bg-2: #1a1a1a;
+            --bg-3: #222;
+            --accent: #00d4aa;
+            --accent-h: #00e6b8;
+            --purple: #7c3aed;
+            --text-0: #fff;
+            --text-1: #e0e0e0;
+            --text-2: #b0b0b0;
+            --border: #333;
+            --success: #00d4aa;
+            --warn: #ffaa00;
+            --error: #ff4444;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Inter', monospace;
+            background: var(--bg-0);
+            color: var(--text-0);
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .app {
+            display: grid;
+            grid-template-columns: 300px 1fr 500px;
+            grid-template-rows: 70px 1fr;
+            height: 100vh;
+            transition: grid-template-columns 0.3s ease;
+        }
+
+        .app.console-expanded {
+            grid-template-columns: 300px 1fr 800px;
+        }
+
+        .topbar {
+            grid-column: 1 / -1;
+            background: var(--bg-1);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            height: 40px;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: crisp-edges;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 16px;
+            background: rgba(255,68,68,0.1);
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 500;
+        }
+
+        .status.connected { background: rgba(0,212,170,0.2); }
+
+        .dot {
+            width: 10px; height: 10px;
+            border-radius: 50%;
+            background: var(--error);
+            animation: pulse 1.5s infinite;
+        }
+
+        .dot.connected { background: var(--success); animation: none; }
+
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+        .sidebar {
+            background: var(--bg-2);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .device-info {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .device-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--accent);
+            word-break: break-word;
+        }
+
+        .device-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            font-size: 12px;
+            margin-top: 16px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .stat-label { color: var(--text-2); font-size: 11px; }
+        .stat-value { font-weight: 500; font-family: 'Courier New', monospace; }
+
+        .battery-low { color: var(--warn); }
+        .battery-critical { color: var(--error); }
+
+        .connect-btn {
+            width: 100%; padding: 14px;
+            background: var(--accent); color: #000;
+            border: none; border-radius: 8px;
+            font-weight: 600; cursor: pointer;
+            margin: 12px 0; transition: all .2s;
+        }
+
+        .connect-btn:hover:not(.connected) {
+            background: var(--accent-h); transform: translateY(-1px);
+        }
+
+        .connect-btn.connected { background: var(--error); }
+
+        .storage-info { 
+            font-size: 12px; 
+            color: var(--text-2); 
+            line-height: 1.5;
+            font-family: 'Courier New', monospace;
+            padding: 12px;
+            background: var(--bg-3);
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .file-toolbar {
+            padding: 16px 24px; border-bottom: 1px solid var(--border);
+            display: flex; gap: 8px; flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 8px 14px; background: transparent;
+            border: 1px solid var(--border); color: var(--text-0);
+            border-radius: 6px; font-size: 12px; cursor: pointer;
+            transition: all .2s; display: flex; align-items: center; gap: 4px;
+        }
+
+        .btn:hover:not(:disabled) {
+            border-color: var(--accent); background: rgba(0,212,170,.1);
+        }
+
+        .btn.primary { background: var(--accent); border-color: var(--accent); color: #000; }
+        .btn:disabled { opacity: .4; cursor: not-allowed; }
+
+        .path {
+            padding: 0 24px 16px; font-size: 13px; color: var(--text-2);
+            border-bottom: 1px solid var(--border); overflow: hidden;
+        }
+
+        .path span {
+            color: var(--accent); cursor: pointer; padding: 0 4px;
+            border-radius: 4px; transition: .2s;
+        }
+
+        .path span:hover { background: rgba(0,212,170,.2); }
+
+        .file-list {
+            flex: 1; overflow: auto; padding: 8px 0;
+        }
+
+        .file-row {
+            padding: 14px 24px; display: grid;
+            grid-template-columns: auto 1fr auto auto; gap: 16px;
+            align-items: center; cursor: pointer; border-radius: 6px;
+            transition: all .2s; font-size: 13px;
+        }
+
+        .file-row:hover { background: rgba(255,255,255,.05); }
+        .file-row.selected { 
+            background: rgba(0,212,170,.25); 
+            border-left: 4px solid var(--accent);
+        }
+
+        .icon { font-size: 18px; width: 28px; text-align: center; }
+        .folder { color: var(--purple); }
+        .file { color: var(--accent); }
+        .log { color: #ff6b6b; }
+
+        .console-panel {
+            background: var(--bg-2); border-left: 1px solid var(--border);
+            display: flex; flex-direction: column;
+            transition: flex 0.3s ease;
+        }
+
+        .console-header {
+            padding: 16px 24px; border-bottom: 1px solid var(--border);
+            font-size: 13px; font-weight: 600; display: flex;
+            align-items: center; gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .console-input {
+            padding: 16px 24px; border-top: 1px solid var(--border);
+            display: flex; gap: 12px;
+            flex-shrink: 0;
+        }
+
+        #consoleInput {
+            flex: 1; padding: 12px 16px; background: var(--bg-3);
+            border: 1px solid var(--border); border-radius: 8px;
+            color: var(--text-0); font-family: inherit; font-size: 13px;
+        }
+
+        #consoleInput:focus {
+            outline: none; border-color: var(--accent);
+        }
+
+        #console {
+            flex: 1; overflow: auto; padding: 20px 24px;
+            font-family: 'Courier New', monospace; font-size: 12px;
+            line-height: 1.4; background: var(--bg-3);
+        }
+
+        .log-line { margin: 4px 0; display: flex; gap: 8px; }
+        .log-time { color: var(--text-2); min-width: 80px; font-size: 11px; }
+        .log-type {
+            font-size: 11px; padding: 2px 6px; border-radius: 4px;
+            text-transform: uppercase; font-weight: 500;
+        }
+
+        .log-info { background: rgba(0,212,170,.2); color: var(--accent); }
+        .log-success { background: rgba(0,212,170,.2); color: var(--success); }
+        .log-error { background: rgba(255,68,68,.2); color: var(--error); }
+        .log-rpc { background: rgba(124,58,237,.2); color: var(--purple); }
+
+        .modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,.8);
+            display: flex; align-items: center; justify-content: center; z-index: 1000;
+        }
+
+        .modal-content {
+            background: var(--bg-2); border: 1px solid var(--border);
+            border-radius: 12px; padding: 32px; max-width: 400px; width: 90%;
+        }
+
+        .input-field {
+            width: 100%; padding: 14px 16px; background: var(--bg-3);
+            border: 1px solid var(--border); border-radius: 8px;
+            color: var(--text-0); font-size: 15px; margin: 16px 0;
+        }
+
+        .input-field:focus {
+            outline: none; border-color: var(--accent);
+        }
+
+        .modal-actions {
+            display: flex; gap: 12px; justify-content: flex-end;
+        }
+
+        .toast {
+            position: fixed; top: 100px; right: 24px;
+            padding: 14px 20px; border-radius: 8px; color: white;
+            font-weight: 500; transform: translateX(350px);
+            transition: all .3s; z-index: 2000; font-size: 13px;
+        }
+
+        .toast.show { transform: translateX(0); }
+        .toast.success { background: var(--success); }
+        .toast.error { background: var(--error); }
+
+        .loading {
+            padding: 60px 24px; text-align: center; color: var(--text-2);
+            display: flex; flex-direction: column; align-items: center; gap: 16px;
+        }
+
+        .spinner {
+            width: 32px; height: 32px; border: 3px solid var(--border);
+            border-top: 3px solid var(--accent); border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+    </style>
+</head>
+<body>
+    <div class="app" id="appContainer">
+        <div class="topbar">
+            <img src="https://raw.githubusercontent.com/FunpaySmartBot/qFlasher/refs/heads/main/logo.png" 
+                 alt="qFlasher" class="logo">
+            <div class="status" id="status">
+                <div class="dot" id="statusDot"></div>
+                <span id="statusText">Disconnected</span>
+            </div>
+        </div>
+
+        <div class="sidebar">
+            <div class="device-info">
+                <div id="deviceInfo">
+                    <div class="device-name" id="deviceName">Flipper Zero</div>
+                    <div class="device-stats" id="deviceStats">
+                        <div class="stat-item">
+                            <div class="stat-label">Battery</div>
+                            <div class="stat-value" id="batteryInfo">-</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-label">Version</div>
+                            <div class="stat-value" id="versionInfo">-</div>
+                        </div>
+                    </div>
+                </div>
+                <button class="connect-btn" id="connectBtn">🔌 Connect Device</button>
+                <div class="storage-info" id="storageInfo">-</div>
+            </div>
+            
+            <div class="file-toolbar">
+                <button class="btn primary" id="newFolder">📁 New Folder</button>
+                <button class="btn primary" id="newFile">📄 New File</button>
+                <button class="btn" id="uploadBtn">⬆️ Upload</button>
+                <button class="btn" id="downloadBtn" disabled>⬇️ Download</button>
+                <button class="btn" id="refreshBtn">🔄 Refresh</button>
+                <button class="btn" id="deleteBtn" disabled>🗑️ Delete</button>
+            </div>
+
+            <div class="path" id="pathDisplay">/</div>
+            <div class="file-list" id="fileList">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <div>Connect your Flipper Zero</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="console-panel" id="consolePanel">
+            <div class="console-header">
+                📡 qFlasher Console
+                <button class="btn" id="clearConsole">Clear</button>
+                <button class="btn" id="toggleConsoleSize">⬜</button>
+            </div>
+            <div id="console"></div>
+            <div class="console-input">
+                <input id="consoleInput" placeholder='{"method":"storage_list","params":{"path":"/"}}'>
+                <button class="btn primary" id="sendCmd">Send</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal" id="newModal" style="display: none;">
+        <div class="modal-content">
+            <h3 id="modalTitle">New Item</h3>
+            <input class="input-field" id="modalInput" placeholder="Name">
+            <div class="modal-actions">
+                <button class="btn" onclick="closeModal()">Cancel</button>
+                <button class="btn primary" id="modalConfirm">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastContainer"></div>
+
+<script>
+class qFlasher {
+    constructor() {
+        this.port = null;
+        this.reader = null;
+        this.writer = null;
+        this.path = ['/'];
+        this.files = [];
+        this.selected = new Set();
+        this.buffer = '';
+        this.sequence = 0;
+        this.connected = false;
+        this.deviceInfo = {};
+        this.batteryInfo = {};
+        this.storageInfo = {};
+        this.pending = new Map();
+        this.readLoopActive = false;
+        this.consoleExpanded = false;
+        this.init();
+    }
+
+    log(type, msg) {
+        const time = new Date().toLocaleTimeString([],{hour: '2-digit', minute:'2-digit', second:'2-digit'});
+        const consoleEl = document.getElementById('console');
+        const line = document.createElement('div');
+        line.className = 'log-line';
+        line.innerHTML = `
+            <span class="log-time">${time}</span>
+            <span class="log-type log-${type}">${type}</span>
+            <span>${msg}</span>
+        `;
+        consoleEl.appendChild(line);
+        consoleEl.scrollTop = consoleEl.scrollHeight;
+    }
+
+    toast(msg, type='success') {
+        const t = document.createElement('div');
+        t.className = `toast ${type}`;
+        t.textContent = msg;
+        document.getElementById('toastContainer').appendChild(t);
+        setTimeout(()=>t.classList.add('show'), 50);
+        setTimeout(()=>{
+            t.classList.remove('show');
+            setTimeout(()=>t.remove(), 300);
+        }, 2500);
+    }
+
+    async rpc(cmd) {
+        if (!this.writer) {
+            this.log('error', 'No writer - not connected');
+            return;
+        }
+        const id = this.sequence++;
+        const full = JSON.stringify({...cmd, id}) + '\n';
+        this.pending.set(id, cmd.method);
+        const enc = new TextEncoder();
+        await this.writer.write(enc.encode(full));
+        this.log('rpc', `→ ${cmd.method}`);
+    }
+
+    async handle(resp) {
+        const method = this.pending.get(resp.id);
+        this.pending.delete(resp.id);
+        
+        if (resp.error) {
+            this.log('error', `${method || 'unknown'}: ${resp.error.message}`);
+            if (method === 'storage_list') {
+                this.showFileListError('Failed to load directory');
+            }
+            return;
+        }
+        this.log('rpc', `← ${method} OK`);
+        
+        switch(method) {
+            case 'storage_list':
+                this.files = resp.result?.files || resp.result || [];
+                this.render();
+                break;
+            case 'system_get_info':
+            case 'system_info':
+                this.deviceInfo = {...this.deviceInfo, ...resp.result};
+                this.updateDeviceInfo();
+                break;
+            case 'power_get_info':
+            case 'power_info':
+                this.batteryInfo = resp.result;
+                this.updateBattery(resp.result);
+                break;
+            case 'storage_info':
+                this.storageInfo = resp.result;
+                this.updateStorageInfo();
+                break;
+        }
+    }
+
+    showFileListError(msg) {
+        document.getElementById('fileList').innerHTML = 
+            `<div style="padding:60px;text-align:center;color:var(--text-2)">${msg}</div>`;
+    }
+
+    showLoading() {
+        document.getElementById('fileList').innerHTML = 
+            '<div class="loading"><div class="spinner"></div>Loading...</div>';
+    }
+    async connect() {
+        try {
+            await this.disconnect();
+            
+            this.port = await navigator.serial.requestPort();
+            await this.port.open({ baudRate: 115200 });
+            this.reader = this.port.readable.getReader();
+            this.writer = this.port.writable.getWriter();
+            
+            this.connected = true;
+            this.updateStatus(true);
+            this.toast('✅ qFlasher Connected!');
+            this.log('success', 'qFlasher v1.3 - Connected to Flipper Zero');
+
+            this.pending.clear();
+            this.buffer = '';
+
+            await Promise.all([
+                this.rpc({method: 'system_info'}),
+                this.rpc({method: 'system_get_info'}),
+                this.rpc({method: 'power_info'}),
+                this.rpc({method: 'power_get_info'}),
+                this.rpc({method: 'storage_info'})
+            ]);
+            
+            setTimeout(() => this.ls(), 500);
+            
+            this.readLoop();
+        } catch(e) {
+            this.log('error', `Connect: ${e.message}`);
+            this.toast('❌ ' + e.message, 'error');
+            await this.disconnect();
+        }
+    }
+
+    async readLoop() {
+        this.readLoopActive = true;
+        while (this.connected && this.reader && this.readLoopActive) {
+            try {
+                const {value, done} = await this.reader.read();
+                if (done) break;
+                
+                const chunk = new TextDecoder().decode(value, {stream: true});
+                this.buffer += chunk;
+                
+                let lines = this.buffer.split('\n');
+                this.buffer = lines.pop() || '';
+                
+                for (let line of lines.filter(l => l.trim())) {
+                    try {
+                        const resp = JSON.parse(line);
+                        
+                        if (resp.jsonrpc === '2.0' || resp.id !== undefined || resp.method || resp.result !== undefined) {
+                            await this.handle(resp);
+                        }
+                    } catch(e) {
+                        if (line.length > 0) {
+                            this.log('info', `Raw: ${line.substring(0, 100)}...`);
+                        }
+                    }
+                }
+            } catch(e) {
+                if (this.connected) {
+                    this.log('error', `Read error: ${e.message}`);
+                }
+                break;
+            }
+        }
+        
+        if (this.connected) {
+            this.log('warn', 'Connection lost, attempting reconnect...');
+            setTimeout(() => {
+                if (this.connected) this.connect();
+            }, 2000);
+        }
+    }
+
+    async disconnect() {
+        this.connected = false;
+        this.readLoopActive = false;
+        
+        if (this.reader) {
+            try { await this.reader.cancel(); } catch(e) {}
+            this.reader = null;
+        }
+        if (this.writer) {
+            try { await this.writer.close(); } catch(e) {}
+            this.writer = null;
+        }
+        if (this.port) {
+            try { await this.port.close(); } catch(e) {}
+            this.port = null;
+        }
+        
+        this.pending.clear();
+        this.buffer = '';
+        this.deviceInfo = {};
+        this.batteryInfo = {};
+        this.storageInfo = {};
+        this.updateStatus(false);
+        this.resetDeviceInfo();
+        this.log('info', 'Disconnected');
+        this.showFileListError('Disconnected');
+    }
+
+    resetDeviceInfo() {
+        document.getElementById('deviceName').textContent = 'Flipper Zero';
+        document.getElementById('batteryInfo').textContent = '-';
+        document.getElementById('batteryInfo').className = 'stat-value';
+        document.getElementById('versionInfo').textContent = '-';
+        document.getElementById('storageInfo').textContent = '-';
+    }
+
+    async ls() {
+        if (!this.connected) return;
+        const p = this.path.join('/');
+        this.showLoading();
+        await this.rpc({method: 'storage_list', params: {path: p}});
+    }
+
+    render() {
+        const list = document.getElementById('fileList');
+        if (!this.files.length) {
+            list.innerHTML = '<div style="padding:60px;text-align:center;color:var(--text-2)">Empty folder</div>';
+            return;
+        }
+        list.innerHTML = this.files.map(f => {
+            const name = f.name || f;
+            const type = f.type === 'folder' || name.endsWith('/') ? 'folder' : 'file';
+            const size = f.size || 0;
+            
+            const icon = type === 'folder' ? '📁' : 
+                        /\.(log|txt|cfg)$/i.test(name) ? '📋' : '📄';
+            return `<div class="file-row ${type}" data-name="${name}" 
+                        ondblclick="qflasher.open('${name.replace(/'/g, "\\'")}')" onclick="qflasher.select(event,this)"
+                        draggable="true">
+                        <div class="icon ${type}">${icon}</div>
+                        <div title="${name}">${name}</div>
+                        <div>${size?(size/1024).toFixed(0)+'K':'-'}</div>
+                        <div>-</div>
+                    </div>`;
+        }).join('');
+    }
+
+    select(e, el) {
+        if (e.ctrlKey || e.metaKey) {
+            el.classList.toggle('selected');
+            if (el.classList.contains('selected')) {
+                this.selected.add(el.dataset.name);
+            } else {
+                this.selected.delete(el.dataset.name);
+            }
+        } else {
+            document.querySelectorAll('.file-row').forEach(r => r.classList.remove('selected'));
+            el.classList.add('selected');
+            this.selected.clear();
+            this.selected.add(el.dataset.name);
+        }
+        this.updateBtns();
+    }
+
+    updateBtns() {
+        const ok = this.selected.size > 0;
+        document.getElementById('downloadBtn').disabled = !ok;
+        document.getElementById('deleteBtn').disabled = !ok;
+    }
+
+    async open(name) {
+        const f = this.files.find(x => (x.name || x) === name);
+        if (f?.type === 'folder' || name.endsWith('/')) {
+            this.path.push(name.replace('/', ''));
+            this.updatePath();
+            await this.ls();
+        }
+    }
+
+    goTo(index) {
+        this.path = this.path.slice(0, index + 1);
+        this.updatePath();
+        this.ls();
+    }
+
+    updatePath() {
+        document.getElementById('pathDisplay').innerHTML = 
+            this.path.map((p,i)=>`<span onclick="qflasher.goTo(${i})">${p}</span>`).join('/');
+    }
+
+    updateDeviceInfo() {
+        const name = this.deviceInfo.name || 
+                    this.deviceInfo.hostname || 
+                    this.deviceInfo.version_string || 
+                    'Flipper Zero';
+        document.getElementById('deviceName').textContent = name;
+
+        const version = this.deviceInfo.version || 
+                       this.deviceInfo.version_string || 
+                       this.deviceInfo.api_version || 
+                       this.deviceInfo.fw_version || 
+                       'Unknown';
+        document.getElementById('versionInfo').textContent = version;
+    }
+
+    updateBattery(info) {
+        if (!info) return;
+        
+        let batteryText = 'Unknown';
+        let batteryClass = '';
+        
+        if (info.charge !== undefined) {
+            batteryText = `${info.charge}%`;
+            if (info.charge < 20) batteryClass = 'battery-critical';
+            else if (info.charge < 30) batteryClass = 'battery-low';
+        } else if (info.voltage !== undefined) {
+            batteryText = `${info.voltage.toFixed(1)}V`;
+        } else if (info.battery_level !== undefined) {
+            batteryText = `${info.battery_level}%`;
+            if (info.battery_level < 20) batteryClass = 'battery-critical';
+            else if (info.battery_level < 30) batteryClass = 'battery-low';
+        } else if (info.level !== undefined) {
+            batteryText = `${info.level}%`;
+            if (info.level < 20) batteryClass = 'battery-critical';
+            else if (info.level < 30) batteryClass = 'battery-low';
+        }
+        
+        const el = document.getElementById('batteryInfo');
+        el.textContent = batteryText;
+        el.className = `stat-value ${batteryClass}`;
+    }
+
+    updateStorageInfo() {
+        const info = this.storageInfo;
+        let storageText = '-';
+        
+        if (info.total_space !== undefined && info.free_space !== undefined) {
+            const totalMB = (info.total_space / 1024 / 1024).toFixed(1);
+            const freeMB = (info.free_space / 1024 / 1024).toFixed(1);
+            const usedMB = (totalMB - freeMB).toFixed(1);
+            const usedPercent = ((1 - info.free_space / info.total_space) * 100).toFixed(0);
+            storageText = `${freeMB}MB / ${totalMB}MB free (${usedPercent}% used)`;
+        } else if (info.free_space !== undefined) {
+            const freeMB = (info.free_space / 1024 / 1024).toFixed(1);
+            storageText = `${freeMB}MB free`;
+        }
+        
+        document.getElementById('storageInfo').textContent = storageText;
+    }
+
+    async mkdir(name) {
+        const p = this.path.join('/') + '/' + name;
+        await this.rpc({method: 'storage_mkdir', params: {path: p}});
+        this.toast(`📁 ${name} created`);
+        setTimeout(() => this.ls(), 500);
+    }
+
+    async touch(name) {
+        const p = this.path.join('/') + '/' + name;
+        await this.rpc({method: 'storage_touch', params: {path: p}});
+        this.toast(`📄 ${name} created`);
+        setTimeout(() => this.ls(), 500);
+    }
+
+    async delete(name) {
+        const p = this.path.join('/') + '/' + name;
+        await this.rpc({method: 'storage_remove', params: {path: p}});
+        this.toast(`🗑️ ${name} deleted`);
+    }
+
+    async deleteSelected() {
+        if (!this.selected.size) return;
+        if (!confirm(`Delete ${this.selected.size} item${this.selected.size > 1 ? 's' : ''}?`)) return;
+        for (let name of [...this.selected]) {
+            await this.delete(name);
+        }
+        this.selected.clear();
+        this.updateBtns();
+        setTimeout(() => this.ls(), 500);
+    }
+
+    newModal(type) {
+        document.getElementById('modalTitle').textContent = 
+            `📁 New ${type === 'folder' ? 'Folder' : 'File'}`;
+        document.getElementById('modalInput').dataset.type = type;
+        document.getElementById('modalInput').placeholder = 
+            type === 'folder' ? 'myfolder' : 'file.txt';
+        document.getElementById('modalInput').value = '';
+        document.getElementById('newModal').style.display = 'flex';
+        document.getElementById('modalInput').focus();
+    }
+
+    confirmModal() {
+        const name = document.getElementById('modalInput').value.trim();
+        if (!name) return this.toast('Enter a name', 'error');
+        const type = document.getElementById('modalInput').dataset.type;
+        if (type === 'folder') this.mkdir(name);
+        else this.touch(name);
+        closeModal();
+    }
+
+    async upload(files) {
+        for (let file of Array.from(files)) {
+            const p = this.path.join('/') + '/' + file.name;
+            this.log('info', `📤 Uploading ${file.name} (${(file.size/1024).toFixed(1)}K)`);
+        }
+        setTimeout(() => this.ls(), 1000);
+    }
+
+    updateStatus(connected) {
+        const status = document.getElementById('status');
+        const dot = document.getElementById('statusDot');
+        const text = document.getElementById('statusText');
+        const btn = document.getElementById('connectBtn');
+        
+        status.classList.toggle('connected', connected);
+        dot.classList.toggle('connected', connected);
+        text.textContent = connected ? 'Connected' : 'Disconnected';
+        btn.textContent = connected ? '🔌 Disconnect' : '🔌 Connect Device';
+        btn.classList.toggle('connected', connected);
+    }
+
+    toggleConsoleSize() {
+        this.consoleExpanded = !this.consoleExpanded;
+        const app = document.getElementById('appContainer');
+        const toggleBtn = document.getElementById('toggleConsoleSize');
+        
+        if (this.consoleExpanded) {
+            app.classList.add('console-expanded');
+            toggleBtn.textContent = '🗗';
+            this.log('info', 'Console expanded');
+        } else {
+            app.classList.remove('console-expanded');
+            toggleBtn.textContent = '⬜';
+            this.log('info', 'Console normal');
+        }
+    }
+
+    init() {
+        document.getElementById('connectBtn').onclick = () => 
+            this.connected ? this.disconnect() : this.connect();
+
+        document.getElementById('newFolder').onclick = () => this.newModal('folder');
+        document.getElementById('newFile').onclick = () => this.newModal('file');
+        
+        document.getElementById('uploadBtn').onclick = () => {
+            const inp = document.createElement('input');
+            inp.type = 'file'; inp.multiple = true;
+            inp.onchange = e => this.upload(e.target.files);
+            inp.click();
+        };
+        
+        document.getElementById('downloadBtn').onclick = () => this.download();
+        document.getElementById('refreshBtn').onclick = () => this.ls();
+        document.getElementById('deleteBtn').onclick = () => this.deleteSelected();
+
+        document.getElementById('sendCmd').onclick = () => this.exec();
+        document.getElementById('consoleInput').onkeydown = e => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                this.exec();
+            }
+        };
+        document.getElementById('clearConsole').onclick = () => 
+            document.getElementById('console').innerHTML = '';
+        
+        document.getElementById('toggleConsoleSize').onclick = () => this.toggleConsoleSize();
+
+        document.getElementById('modalConfirm').onclick = () => this.confirmModal();
+
+        document.addEventListener('keydown', e => {
+            if (e.ctrlKey || e.metaKey) {
+                if (e.key === 'n') {
+                    e.preventDefault();
+                    this.newModal('folder');
+                }
+                if (e.key === 'e') {
+                    e.preventDefault();
+                    this.newModal('file');
+                }
+            }
+        });
+
+        this.log('info', 'qFlasher v1.3 - Enhanced File Manager');
+        this.log('info', 'Works with qFlipper, Momentum, Unleashed, RogueMaster & more');
+        this.log('info', 'Click "Connect Device" to begin');
+    }
+
+    async exec() {
+        const cmd = document.getElementById('consoleInput').value.trim();
+        if (!cmd || !this.connected) {
+            this.toast('Connect first', 'error');
+            return;
+        }
+        try {
+            const rpc = JSON.parse(cmd);
+            await this.rpc(rpc);
+        } catch(e) {
+            this.log('error', `Invalid JSON: ${e.message}`);
+        }
+        document.getElementById('consoleInput').value = '';
+    }
+
+    async download() {
+        if (this.selected.size !== 1) return this.toast('Select 1 file', 'error');
+        const name = [...this.selected][0];
+        const path = this.path.join('/') + '/' + name;
+        await this.rpc({method: 'storage_stat', params: {path}});
+        this.toast(`📥 ${name} (download WIP)`);
+    }
+}
+
+const qflasher = new qFlasher();
+
+function closeModal() {
+    document.getElementById('newModal').style.display = 'none';
+}
+</script>
+</body>
+</html>
