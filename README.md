@@ -1,49 +1,52 @@
-markdown
+# qFlasher README - COMPLETE SINGLE FILE
 
- qFlasher - Flipper Zero File Manager ![qFlasher Logo](https://raw.githubusercontent.com/FunpaySmartBot/qFlasher/refs/heads/main/logo.png)
+qFlasher Logo: https://raw.githubusercontent.com/FunpaySmartBot/qFlasher/refs/heads/main/logo.png
 
-qFlasher is a modern web-based file manager for Flipper Zero. Connect via Web Serial, browse files, manage storage, and execute RPC commands.
+qFlasher - Flipper Zero Web File Manager + RPC Console
 
-## Features
-```File Management: 📁 Create Folders | 📄 Create Files | ⬆️ Upload | ⬇️ Download (WIP) | 🗑️ Delete
-Device Info: 🔋 Battery | 🆔 Name | 📊 Space | 🛠️ Version
-Console: 📡 RPC | 🔄 Expandable | 📋 Logs
-```
+FEATURES:
+File: 📁 New Folder | 📄 New File | ⬆️ Upload | 🗑️ Delete | 🔄 Refresh
+Info: 🔋 Battery | 🆔 Name | 📊 Space | 🛠️ Version
+Console: 📡 RPC | 🔄 Expand (⬜/🗗) | 📋 Clear
 
-## Keyboard Shortcuts
-Ctrl/Cmd+N = New Folder | Ctrl/Cmd+E = New File | Ctrl+Click = Multi-select
+SHORTCUTS:
+Ctrl+N = New Folder | Ctrl+E = New File | Ctrl+Click = Multi-select
 
-## Quick Start
+QUICK START:
 1. Flipper Zero -> USB -> Chrome/Edge
-2. Click "🔌 Connect Device" 
-3. Browse / upload / delete files
-4. Console: {"method":"storage_list","params":{"path":"/"}}
+2. Click 🔌 Connect Device
+3. Browse files / console commands
 
-## Supported
-Browsers: Chrome 80+ ✅ | Edge 79+ ✅ | Firefox ❌ | Safari ❌
-Firmwares: qFlipper ✅ | Momentum ✅ | Unleashed ✅ | RogueMaster ✅ | ANY RPC ✅
+BROWSERS: Chrome 80+ ✅ | Edge 79+ ✅ | Firefox ❌ | Safari ❌
+FIRMWARES: qFlipper✅ Momentum✅ Unleashed✅ RogueMaster✅ ANY RPC✅
 
-## File Operations
-📁 New Folder -> Creates dir | 📄 New File -> Empty file
-⬆️ Upload -> Multi-file | 🔄 Refresh -> Reload | 🗑️ Delete -> Selected
+FILE OPERATIONS:
+New Folder (📁) -> Creates directory
+New File (📄) -> Creates empty file
+Upload (⬆️) -> Multi-file upload
+Refresh (🔄) -> Reload directory
+Delete (🗑️) -> Selected files/folders
 
-## Console Commands
-{"method":"storage_list","params":{"path":"/"}}  // List files
-{"method":"system_info"}                         // Device info  
-{"method":"power_info"}                          // Battery
-{"method":"storage_info"}                        // Free space
-{"method":"storage_mkdir","params":{"path":"/test"}} // Create folder
+CONSOLE COMMANDS:
+{"method":"storage_list","params":{"path":"/"}}     List root
+{"method":"system_info"}                            Device info
+{"method":"power_info"}                             Battery
+{"method":"storage_info"}                           Free space
+{"method":"storage_mkdir","params":{"path":"/test"}} Create folder
 
-## Troubleshooting
-No ports? -> chrome://flags -> Web Serial
-Battery "-"? -> {"method":"power_get_info"}
-No storage? -> {"method":"storage_info"}
+TROUBLESHOOTING:
+No ports? chrome://flags -> Enable Web Serial
+Battery shows -? {"method":"power_get_info"}
+No storage? {"method":"storage_info"}
+Console not expanding? Browser zoom = 100%
 
-## Usage
-Save HTML as index.html -> Open in Chrome -> Connect -> Done!
+DEVELOPMENT:
+Save HTML as index.html -> Open Chrome -> Connect -> Done!
 
-## License
-MIT - Free for all Flipper projects
-Created by FunpaySmartBot
+LICENSE: MIT - Free for all Flipper projects
+CREATOR: FunpaySmartBot
 
-⭐ Star if useful! qFlasher v1.3 🚀
+ROADMAP: Download | Bulk ops | Drag-drop | Themes
+VERSION: v1.3 - Ultimate Flipper companion 🚀
+
+⭐ Star if useful! Works with ALL RPC firmwares!
