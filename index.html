@@ -480,39 +480,59 @@ class qFlasher {
             '<div class="loading"><div class="spinner"></div>Loading...</div>';
     }
     async connect() {
-        try {
-            await this.disconnect();
-            
-            this.port = await navigator.serial.requestPort();
-            await this.port.open({ baudRate: 115200 });
-            this.reader = this.port.readable.getReader();
-            this.writer = this.port.writable.getWriter();
-            
-            this.connected = true;
-            this.updateStatus(true);
-            this.toast('✅ qFlasher Connected!');
-            this.log('success', 'qFlasher v1.3 - Connected to Flipper Zero');
-
-            this.pending.clear();
-            this.buffer = '';
-
-            await Promise.all([
-                this.rpc({method: 'system_info'}),
-                this.rpc({method: 'system_get_info'}),
-                this.rpc({method: 'power_info'}),
-                this.rpc({method: 'power_get_info'}),
-                this.rpc({method: 'storage_info'})
-            ]);
-            
-            setTimeout(() => this.ls(), 500);
-            
-            this.readLoop();
-        } catch(e) {
-            this.log('error', `Connect: ${e.message}`);
-            this.toast('❌ ' + e.message, 'error');
-            await this.disconnect();
+    try {
+        if (!navigator.serial) {
+            throw new Error('Web Serial API not supported (Chrome/Edge 89+)');
         }
+        
+        await this.disconnect();
+        
+        this.port = await navigator.serial.requestPort({
+            filters: [
+                { usbVendorId: 0x20a0 },
+                { usbProductId: 0x42ed }
+            ]
+        });
+        
+        const info = this.port.getInfo();
+        this.log('info', `Port found: VID=${info.usbVendorId?.toString(16)}, PID=${info.usbProductId?.toString(16)}`);
+        
+        await this.port.open({ baudRate: 115200 });
+        
+        const reader = this.port.readable.getReader();
+        try {
+            while (true) {
+                const { done } = await reader.read();
+                if (done) break;
+            }
+        } finally {
+            reader.releaseLock();
+        }
+        
+        this.reader = this.port.readable.getReader();
+        this.writer = this.port.writable.getWriter();
+        
+        this.connected = true;
+        this.updateStatus(true);
+        this.toast('✅ Connected to Flipper Zero!');
+        this.log('success', 'qFlasher v1.4 - Connected');
+        
+        await Promise.all([
+            this.rpc({method: 'system_get_info'}),
+            this.rpc({method: 'power_get_info'}),
+            this.rpc({method: 'storage_info'})
+        ]);
+        
+        setTimeout(() => this.ls(), 1000);
+        this.readLoop();
+        
+    } catch(e) {
+        console.error('Connect error:', e);
+        this.log('error', `Connect failed: ${e.message}`);
+        this.toast(`❌ ${e.message}`, 'error');
+        await this.disconnect();
     }
+}
 
     async readLoop() {
         this.readLoopActive = true;
@@ -531,7 +551,7 @@ class qFlasher {
                     try {
                         const resp = JSON.parse(line);
                         
-                        if (resp.jsonrpc === '2.0' || resp.id !== undefined || resp.method || resp.result !== undefined) {
+                        if (resp.jsonrpc === '2.0' && (resp.id !== undefined || resp.result !== undefined || resp.method)) {
                             await this.handle(resp);
                         }
                     } catch(e) {
