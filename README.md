@@ -5,9 +5,10 @@ markdown
 qFlasher is a modern web-based file manager for Flipper Zero. Connect via Web Serial, browse files, manage storage, and execute RPC commands.
 
 ## Features
-File Management: 📁 Create Folders | 📄 Create Files | ⬆️ Upload | ⬇️ Download (WIP) | 🗑️ Delete
+```File Management: 📁 Create Folders | 📄 Create Files | ⬆️ Upload | ⬇️ Download (WIP) | 🗑️ Delete
 Device Info: 🔋 Battery | 🆔 Name | 📊 Space | 🛠️ Version
 Console: 📡 RPC | 🔄 Expandable | 📋 Logs
+```
 
 ## Keyboard Shortcuts
 Ctrl/Cmd+N = New Folder | Ctrl/Cmd+E = New File | Ctrl+Click = Multi-select
