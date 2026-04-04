@@ -389,17 +389,6 @@
     <div id="toastContainer"></div>
 
 <script>
-// Parse qFlasher logs
-function parseQFlasherLog(line) {
-    const match = line.match(/\$qFlasher\$\s*(\w+)\|(\d+)\|(.*)/);
-    if(match) {
-        return {
-            type: match[1],
-            id: parseInt(match[2]),
-            data: JSON.parse(match[3])
-        };
-    }
-}
     
 class UniversalFlipperManager {
     constructor() {
