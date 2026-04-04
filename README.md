@@ -55,7 +55,7 @@ No storage? {"method":"storage_info"}
 Console not expanding? Browser zoom = 100%
 ```
 # DEVELOPMENT:
-Save HTML as index.html -> Open Chrome -> Connect -> Done! or use my (site)[https://funpaysmartbot.github.io/qFlasher/]
+Save HTML as index.html -> Open Chrome -> Connect -> Done! or use my [site](https://funpaysmartbot.github.io/qFlasher/)
 
 # OTHER
 Free for all Flipper projects
