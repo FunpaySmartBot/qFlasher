@@ -29,7 +29,7 @@ Chrome 80+ ✅ | Edge 79+ ✅ | Firefox ❌ | Safari ❌
 ```
 # FIRMWARES:
 ```
-qFlipper✅ Momentum🟠 Unleashed✅ RogueMaster✅ ANY RPC✅
+qFlipper✅ Momentum✅ Unleashed✅ RogueMaster✅ ANY RPC✅
 ```
 # FILE OPERATIONS:
 ```
