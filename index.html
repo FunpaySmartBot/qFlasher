@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>qFlasher - Flipper Zero File Manager</title>
+    <title>qFlasher - Universal Flipper Zero File Manager</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -298,6 +298,18 @@
         }
 
         @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+
+        .firmware-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            padding: 4px 12px;
+            background: var(--accent);
+            color: #000;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -309,6 +321,7 @@
                 <div class="dot" id="statusDot"></div>
                 <span id="statusText">Disconnected</span>
             </div>
+            <div class="firmware-badge" id="firmwareBadge" style="display: none;"></div>
         </div>
 
         <div class="sidebar">
@@ -350,7 +363,7 @@
 
         <div class="console-panel" id="consolePanel">
             <div class="console-header">
-                📡 qFlasher Console
+                📡 Universal Console 
                 <button class="btn" id="clearConsole">Clear</button>
                 <button class="btn" id="toggleConsoleSize">⬜</button>
             </div>
@@ -376,7 +389,7 @@
     <div id="toastContainer"></div>
 
 <script>
-class qFlasher {
+class UniversalFlipperManager {
     constructor() {
         this.port = null;
         this.reader = null;
@@ -393,7 +406,17 @@ class qFlasher {
         this.pending = new Map();
         this.readLoopActive = false;
         this.consoleExpanded = false;
+        this.firmwareType = 'unknown';
         this.init();
+    }
+
+    getUniversalCommands() {
+        return [
+            'system_get_info', 'system_info', 'device_info', 'info',
+            'power_get_info', 'power_info', 'battery_info', 'power_status',
+            'storage_info', 'sd_info', 'fs_info', 'storage_status',
+            'storage_list', 'storage_mkdir', 'storage_touch', 'storage_remove', 'storage_stat'
+        ];
     }
 
     log(type, msg) {
@@ -419,7 +442,7 @@ class qFlasher {
         setTimeout(()=>{
             t.classList.remove('show');
             setTimeout(()=>t.remove(), 300);
-        }, 2500);
+        }, 3000);
     }
 
     async rpc(cmd) {
@@ -447,30 +470,53 @@ class qFlasher {
             return;
         }
         this.log('rpc', `← ${method} OK`);
-        
+
         switch(method) {
             case 'storage_list':
                 this.files = resp.result?.files || resp.result || [];
                 this.render();
                 break;
-               case 'system_get_info':
-               case 'system_info':
-case 'device_info':           // 🔥 Momentum Fix
-    this.deviceInfo = {...this.deviceInfo, ...resp.result};
-    this.updateDeviceInfo();
-    break;
-case 'power_get_info':
-case 'power_info':
-case 'battery_info':          // 🔥 Momentum  Fix
-    this.batteryInfo = resp.result;
-    this.updateBattery(resp.result);
-    break;
-case 'storage_info':
-case 'sd_info':               // 🔥 Momentum Fix
-    this.storageInfo = resp.result;
-    this.updateStorageInfo();
-    break;
+            case 'system_get_info':
+            case 'system_info':
+            case 'device_info':
+            case 'info':
+                this.deviceInfo = {...this.deviceInfo, ...resp.result};
+                this.updateDeviceInfo();
+                this.detectFirmware();
+                break;
+            case 'power_get_info':
+            case 'power_info':
+            case 'battery_info':
+            case 'power_status':
+                this.batteryInfo = resp.result;
+                this.updateBattery(resp.result);
+                break;
+            case 'storage_info':
+            case 'sd_info':
+            case 'fs_info':
+            case 'storage_status':
+                this.storageInfo = resp.result;
+                this.updateStorageInfo();
+                break;
         }
+    }
+
+    detectFirmware() {
+        const info = this.deviceInfo;
+        let fwType = 'Unknown';
+        
+        if (info.name?.toLowerCase().includes('momentum')) fwType = 'Momentum';
+        else if (info.name?.toLowerCase().includes('unleashed')) fwType = 'Unleashed';
+        else if (info.name?.toLowerCase().includes('roguemaster')) fwType = 'RogueMaster';
+        else if (info.version_string?.includes('qFlipper')) fwType = 'qFlipper';
+        else if (info.api_version >= 50) fwType = 'Official';
+        else if (info.name === 'Flipper Zero') fwType = 'Standard';
+        
+        this.firmwareType = fwType;
+        const badge = document.getElementById('firmwareBadge');
+        badge.textContent = fwType;
+        badge.style.display = 'block';
+        this.log('success', `Firmware detected: ${fwType}`);
     }
 
     showFileListError(msg) {
@@ -482,38 +528,34 @@ case 'sd_info':               // 🔥 Momentum Fix
         document.getElementById('fileList').innerHTML = 
             '<div class="loading"><div class="spinner"></div>Loading...</div>';
     }
+
     async connect() {
-    try {
-        if (!navigator.serial) throw new Error('Web Serial API not supported');
-        await this.disconnect();
-        
-        this.port = await navigator.serial.requestPort();
-        
-        await this.port.open({ baudRate: 115200 });
-        this.reader = this.port.readable.getReader();
-        this.writer = this.port.writable.getWriter();
-        
-        this.connected = true;
-        this.updateStatus(true);
-        this.toast('✅ Connected!');
-        
-        await Promise.all([
-    this.rpc({method: 'system_get_info'}),
-    this.rpc({method: 'device_info'}),
-    this.rpc({method: 'power_get_info'}),
-    this.rpc({method: 'battery_info'}),
-    this.rpc({method: 'storage_info'}),
-    this.rpc({method: 'sd_info'})
-]);
-        
-        setTimeout(() => this.ls(), 500);
-        this.readLoop();
-    } catch(e) {
-        this.log('error', `Connect: ${e.message}`);
-        this.toast(`❌ ${e.message}`, 'error');
-        await this.disconnect();
+        try {
+            if (!navigator.serial) throw new Error('Web Serial API not supported');
+            await this.disconnect();
+            
+            this.port = await navigator.serial.requestPort();
+            await this.port.open({ baudRate: 115200 });
+            this.reader = this.port.readable.getReader();
+            this.writer = this.port.writable.getWriter();
+            
+            this.connected = true;
+            this.updateStatus(true);
+            this.toast('✅ Connected!');
+            
+            const commands = this.getUniversalCommands();
+            for (let cmd of commands.slice(0, 6)) {
+                this.rpc({method: cmd});
+            }
+            
+            setTimeout(() => this.ls(), 1000);
+            this.readLoop();
+        } catch(e) {
+            this.log('error', `Connect: ${e.message}`);
+            this.toast(`❌ ${e.message}`, 'error');
+            await this.disconnect();
+        }
     }
-}
 
     async readLoop() {
         this.readLoopActive = true;
@@ -531,7 +573,6 @@ case 'sd_info':               // 🔥 Momentum Fix
                 for (let line of lines.filter(l => l.trim())) {
                     try {
                         const resp = JSON.parse(line);
-                        
                         if (resp.jsonrpc === '2.0' && (resp.id !== undefined || resp.result !== undefined || resp.method)) {
                             await this.handle(resp);
                         }
@@ -553,7 +594,7 @@ case 'sd_info':               // 🔥 Momentum Fix
             this.log('warn', 'Connection lost, attempting reconnect...');
             setTimeout(() => {
                 if (this.connected) this.connect();
-            }, 2000);
+            }, 3000);
         }
     }
 
@@ -591,6 +632,7 @@ case 'sd_info':               // 🔥 Momentum Fix
         document.getElementById('batteryInfo').className = 'stat-value';
         document.getElementById('versionInfo').textContent = '-';
         document.getElementById('storageInfo').textContent = '-';
+        document.getElementById('firmwareBadge').style.display = 'none';
     }
 
     async ls() {
@@ -612,7 +654,9 @@ case 'sd_info':               // 🔥 Momentum Fix
             const size = f.size || 0;
             
             const icon = type === 'folder' ? '📁' : 
-                        /\.(log|txt|cfg)$/i.test(name) ? '📋' : '📄';
+                        /\.(log|txt|cfg)$/i.test(name) ? '📋' : 
+                        /\.(bin|img)$/i.test(name) ? '⚡' :
+                        '📄';
             return `<div class="file-row ${type}" data-name="${name}" 
                         ondblclick="qflasher.open('${name.replace(/'/g, "\\'")}')" onclick="qflasher.select(event,this)"
                         draggable="true">
@@ -671,13 +715,15 @@ case 'sd_info':               // 🔥 Momentum Fix
         const name = this.deviceInfo.name || 
                     this.deviceInfo.hostname || 
                     this.deviceInfo.version_string || 
+                    this.deviceInfo.device_name ||
                     'Flipper Zero';
         document.getElementById('deviceName').textContent = name;
 
         const version = this.deviceInfo.version || 
                        this.deviceInfo.version_string || 
                        this.deviceInfo.api_version || 
-                       this.deviceInfo.fw_version || 
+                       this.deviceInfo.fw_version ||
+                       this.deviceInfo.firmware_version ||
                        'Unknown';
         document.getElementById('versionInfo').textContent = version;
     }
@@ -722,6 +768,9 @@ case 'sd_info':               // 🔥 Momentum Fix
         } else if (info.free_space !== undefined) {
             const freeMB = (info.free_space / 1024 / 1024).toFixed(1);
             storageText = `${freeMB}MB free`;
+        } else if (info.total_bytes !== undefined) {
+            const totalMB = (info.total_bytes / 1024 / 1024).toFixed(1);
+            storageText = `${totalMB}MB total`;
         }
         
         document.getElementById('storageInfo').textContent = storageText;
@@ -860,8 +909,8 @@ case 'sd_info':               // 🔥 Momentum Fix
             }
         });
 
-        this.log('info', 'qFlasher v1.3 - Enhanced File Manager');
-        this.log('info', 'Works with qFlipper, Momentum, Unleashed, RogueMaster & more');
+        this.log('info', 'qFlasher v2.0 - Universal File Manager');
+        this.log('info', 'Compatible: qFlipper, Momentum, Unleashed, RogueMaster, Official');
         this.log('info', 'Click "Connect Device" to begin');
     }
 
@@ -889,7 +938,7 @@ case 'sd_info':               // 🔥 Momentum Fix
     }
 }
 
-const qflasher = new qFlasher();
+const qflasher = new UniversalFlipperManager();
 
 function closeModal() {
     document.getElementById('newModal').style.display = 'none';
