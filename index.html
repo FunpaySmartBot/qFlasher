@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>qFlasher PRO v5.1</title>
+    <title>qFlasher PRO v5.3</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono&family=Inter:wght@400;700&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #050505; --card: #111; --acc: #00ffcc; --brd: #222; --txt: #eee; --err: #ff4444; }
@@ -10,9 +10,9 @@
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--txt); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
         #fileList, #console { overflow-y: scroll !important; }
-        ::-webkit-scrollbar { width: 12px !important; display: block !important; }
+        ::-webkit-scrollbar { width: 14px !important; display: block !important; }
         ::-webkit-scrollbar-track { background: #000 !important; }
-        ::-webkit-scrollbar-thumb { background: #444 !important; border-radius: 6px !important; border: 2px solid #000 !important; }
+        ::-webkit-scrollbar-thumb { background: #444 !important; border-radius: 7px !important; border: 3px solid #000 !important; }
         ::-webkit-scrollbar-thumb:hover { background: var(--acc) !important; }
 
         header { height: 60px; background: #000; border-bottom: 1px solid var(--brd); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; flex-shrink: 0; }
@@ -25,20 +25,45 @@
         .file-row.selected { background: rgba(0,255,204,0.15); border-color: var(--acc); color: var(--acc); }
 
         .term-container { display: flex; flex-direction: column; background: #000; overflow: hidden; }
-        #console { flex: 1; padding: 15px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #0f0; line-height: 1.4; white-space: pre-wrap; }
+        #console { flex: 1; padding: 20px; font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #0f0; line-height: 1.5; white-space: pre-wrap; }
         
+        .input-area { 
+            padding: 15px; 
+            background: var(--panel); 
+            border-top: 1px solid var(--brd); 
+            display: flex; 
+            gap: 10px; 
+            position: relative; 
+            z-index: 10; 
+        }
+        
+        #cli { 
+            flex: 1; 
+            background: #111; 
+            border: 1px solid var(--brd); 
+            color: #fff; 
+            padding: 12px; 
+            border-radius: 4px; 
+            outline: none; 
+            font-family: 'JetBrains Mono'; 
+            font-size: 14px;
+            pointer-events: auto !important;
+            cursor: text;
+        }
+        
+        #cli:focus { border-color: var(--acc); box-shadow: 0 0 5px var(--acc-dim); }
+
         .btn { padding: 8px 12px; background: var(--acc); color: #000; border: none; border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 11px; }
         .btn-s { background: #222; color: #fff; margin-right: 4px; border: 1px solid var(--brd); border-radius: 4px; cursor: pointer; padding: 6px; font-size: 10px; }
         .btn-d { background: #411; color: var(--err); border-color: var(--err); }
         
-        input { background: #111; border: 1px solid var(--brd); color: #fff; padding: 10px; border-radius: 4px; outline: none; flex: 1; font-family: 'JetBrains Mono'; }
         .info-p { padding: 20px; background: #0a0a0a; border-left: 1px solid var(--brd); overflow-y: auto; }
         .stat-i { margin-bottom: 12px; padding: 12px; background: #111; border-radius: 8px; border: 1px solid var(--brd); font-size: 13px; }
     </style>
 </head>
 <body>
     <header>
-        <div style="font-weight:800; color:var(--acc); font-size: 20px;">qFlasher PRO</div>
+        <div style="font-weight:800; color:var(--acc); font-size: 20px;">qFlasher PRO v5.3</div>
         <button id="connBtn" class="btn">CONNECT DEVICE</button>
     </header>
     <div class="main">
@@ -58,12 +83,12 @@
         <div class="term-container">
             <div style="padding:8px 15px; background: #111; display:flex; justify-content: space-between; align-items: center;">
                 <span style="font-size:11px; font-weight:700;">TERMINAL</span>
-                <button class="btn-s" onclick="app.clear()">CLEAR</button>
+                <button class="btn-s" onclick="app.clear()">CLEAR LOG</button>
             </div>
             <div id="console"></div>
-            <div style="padding:15px; border-top:1px solid var(--brd); display:flex; gap:10px">
-                <input id="cli" placeholder="Type command (e.g. device_info)...">
-                <button id="send" class="btn">SEND</button>
+            <div class="input-area">
+                <input id="cli" placeholder="Type command (help, device_info, etc)..." autocomplete="off" spellcheck="false">
+                <button id="send" class="btn">EXECUTE</button>
             </div>
         </div>
         <div class="info-p">
@@ -83,8 +108,9 @@ class FlipperApp {
     init() {
         document.getElementById('connBtn').onclick = () => this.connected ? location.reload() : this.start();
         document.getElementById('send').onclick = () => this.exec();
-        document.getElementById('cli').onkeydown = e => e.key === 'Enter' && this.exec();
+        document.getElementById('cli').onkeydown = e => { if(e.key === 'Enter') { e.preventDefault(); this.exec(); } };
         document.getElementById('u').onchange = e => this.upload(e.target.files[0]);
+        document.querySelector('.term-container').onclick = () => document.getElementById('cli').focus();
     }
     async start() {
         try {
@@ -94,8 +120,9 @@ class FlipperApp {
             this.connected = true;
             document.getElementById('connBtn').textContent = "DISCONNECT";
             this.read();
-            setTimeout(() => { this.info(); this.ls(); }, 600);
-        } catch(e) { this.log("Error: " + e.message); }
+            await this.writer.write(new TextEncoder().encode('\x03\r\n')); 
+            setTimeout(() => { this.info(); this.ls(); document.getElementById('cli').focus(); }, 600);
+        } catch(e) { console.log("Conn Error: " + e.message); }
     }
     async read() {
         this.reader = this.port.readable.getReader();
@@ -113,7 +140,8 @@ class FlipperApp {
     }
     parse(r) {
         const l = r.replace(/\x1B\[[0-9;]*[mK]/g, '').trim();
-        if(!l) return; this.log(l);
+        if(!l) return; 
+        this.log(l);
         if(l.includes('charge')) { let m = l.match(/\d+/); if(m) document.getElementById('bat').textContent = "🔋 Battery: " + m[0] + "%"; }
         if(l.includes('hardware_name')) document.getElementById('name').textContent = "🆔 Name: " + l.split(':')[1].trim();
         if(l.includes('firmware_version')) document.getElementById('fw').textContent = "🛠️ FW: " + l.split(':')[1].trim();
@@ -169,8 +197,20 @@ class FlipperApp {
         setTimeout(() => this.ls(), 1000);
     }
     info() { this.send('device_info'); this.send('power info'); }
-    exec() { const i = document.getElementById('cli'); this.send(i.value); i.value = ''; }
-    log(m) { const c = document.getElementById('console'); const d = document.createElement('div'); d.textContent = "> "+m; c.appendChild(d); c.scrollTop = c.scrollHeight; }
+    exec() { 
+        const i = document.getElementById('cli'); 
+        if(!i.value) return;
+        this.send(i.value); 
+        i.value = '';
+        i.focus();
+    }
+    log(m) { 
+        const c = document.getElementById('console'); 
+        const d = document.createElement('div'); 
+        d.textContent = "> "+m; 
+        c.appendChild(d); 
+        c.scrollTop = c.scrollHeight; 
+    }
     clear() { document.getElementById('console').innerHTML = ''; }
 }
 const app = new FlipperApp();
