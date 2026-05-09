@@ -3,90 +3,94 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>qFlasher Ultra</title>
+    <title>qFlasher v3.0 - Classic Scroll</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root { --bg: #0a0a0a; --panel: #111; --accent: #00d4aa; --border: #333; --text: #fff; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); height: 100vh; display: flex; flex-direction: column; overflow: hidden; }
         
-        ::-webkit-scrollbar { width: 12px; height: 12px; display: block !important; }
-        ::-webkit-scrollbar-track { background: #000; border-left: 1px solid var(--border); }
-        ::-webkit-scrollbar-thumb { background: #444; border-radius: 6px; border: 3px solid #000; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+
+        /* ПРИНУДИТЕЛЬНЫЙ СКРОЛЛБАР */
+        ::-webkit-scrollbar { width: 14px !important; height: 14px !important; display: block !important; }
+        ::-webkit-scrollbar-track { background: #1a1a1a !important; }
+        ::-webkit-scrollbar-thumb { background: #444 !important; border: 2px solid #1a1a1a !important; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent) !important; }
 
         .header { height: 60px; background: var(--panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 20px; justify-content: space-between; flex-shrink: 0; }
-        .main { flex: 1; display: grid; grid-template-columns: 320px 1fr 300px; overflow: hidden; }
         
-        .sidebar { background: #151515; border-right: 1px solid var(--border); display: flex; flex-direction: column; height: 100%; overflow: hidden; }
-        #fileList { flex: 1; overflow-y: scroll; padding: 10px; background: #0d0d0d; }
-        .file-row { padding: 10px; cursor: pointer; border-radius: 4px; display: flex; align-items: center; justify-content: space-between; font-size: 13px; background: #1a1a1a; margin-bottom: 4px; border: 1px solid transparent; }
-        .file-row:hover { border-color: var(--accent); }
-        .file-row.selected { background: #222; border-color: var(--accent); }
+        .main { flex: 1; display: grid; grid-template-columns: 300px 1fr 300px; overflow: hidden; }
 
-        .terminal-container { display: flex; flex-direction: column; background: #000; height: 100%; transition: 0.3s; position: relative; }
-        .terminal-container.expanded { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 100; }
-        #console { flex: 1; overflow-y: scroll; padding: 20px; font-family: 'Consolas', monospace; font-size: 13px; color: #0f0; line-height: 1.5; word-break: break-all; }
+        /* Панели со скроллом */
+        .scroll-area { overflow-y: scroll !important; height: 100%; background: #0d0d0d; }
         
-        .input-area { padding: 15px; background: var(--panel); border-top: 1px solid var(--border); display: flex; gap: 10px; flex-shrink: 0; }
-        input { flex: 1; background: #1a1a1a; border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 4px; outline: none; }
-        
-        .path-bar { padding: 12px; background: #222; font-size: 11px; color: var(--accent); display: flex; justify-content: space-between; border-bottom: 1px solid var(--border); align-items: center; }
-        .btn { padding: 6px 12px; background: var(--accent); color: #000; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 11px; }
-        .btn-s { background: #333; color: #fff; margin-left: 5px; }
-        .btn-danger { background: #600; color: #fff; }
+        .sidebar { background: #151515; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+        .terminal { background: #000; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+        .info { background: #111; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
 
-        .info-panel { background: #111; padding: 20px; border-left: 1px solid var(--border); overflow-y: auto; }
-        .info-item { margin-bottom: 15px; font-size: 13px; padding: 10px; background: #1a1a1a; border-radius: 6px; border: 1px solid #333; }
-        .info-label { font-size: 10px; color: var(--text-2); text-transform: uppercase; margin-bottom: 5px; display: block; }
+        .file-row { padding: 12px; cursor: pointer; border-bottom: 1px solid #222; font-size: 13px; display: flex; align-items: center; gap: 8px; }
+        .file-row:hover { background: #1a1a1a; color: var(--accent); }
+        .file-row.selected { background: #222; border-left: 3px solid var(--accent); }
+
+        #console { flex: 1; padding: 15px; font-family: 'Consolas', monospace; font-size: 12px; color: #0f0; line-height: 1.5; white-space: pre-wrap; }
+        
+        .controls { padding: 10px; background: #222; display: flex; gap: 5px; flex-wrap: wrap; border-bottom: 1px solid var(--border); }
+        .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; background: var(--accent); color: #000; }
+        .btn-s { background: #333; color: #fff; }
+        .btn-d { background: #500; color: #fff; }
+
+        .input-bar { padding: 15px; background: #111; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+        input { flex: 1; background: #1a1a1a; border: 1px solid var(--border); color: #fff; padding: 8px; border-radius: 4px; outline: none; }
+
+        .stat-box { padding: 10px; background: #1a1a1a; border: 1px solid #333; border-radius: 4px; font-size: 12px; }
+        .stat-label { color: #888; font-size: 10px; text-transform: uppercase; display: block; margin-bottom: 4px; }
+        
+        .expanded { position: fixed !important; top: 0; left: 0; width: 100% !important; height: 100% !important; z-index: 100; }
     </style>
 </head>
 <body>
+
     <div class="header">
-        <h2 style="color:var(--accent)">qFlasher Ultra</h2>
-        <button id="connBtn" class="btn">Connect Device</button>
+        <h2 style="color:var(--accent)">qFlasher PRO</h2>
+        <button id="connBtn" class="btn">CONNECT DEVICE</button>
     </div>
 
     <div class="main">
         <div class="sidebar">
-            <div class="path-bar">
-                <span id="curPath">/ext</span>
-                <button class="btn-s" id="backBtn">⬆️</button>
+            <div class="controls">
+                <button class="btn-s" onclick="app.ls()">🔄 REFRESH</button>
+                <button class="btn-s" onclick="app.goUp()">⬆️ UP</button>
+                <button class="btn-s" onclick="app.newDir()">📁+ DIR</button>
+                <button class="btn-s" onclick="app.newFile()">📄+ FILE</button>
+                <button class="btn-s" onclick="document.getElementById('u').click()">⬆️ LOAD</button>
+                <button class="btn-d" onclick="app.del()">🗑️ DEL</button>
+                <input type="file" id="u" style="display:none">
             </div>
-            <div style="padding:10px; display:grid; grid-template-columns: 1fr 1fr; gap:5px; border-bottom: 1px solid var(--border)">
-                <button class="btn-s" onclick="flipper.newModal('folder')">📁 New Dir</button>
-                <button class="btn-s" onclick="flipper.newModal('file')">📄 New File</button>
-                <button class="btn-s" onclick="document.getElementById('fup').click()">⬆️ Upload</button>
-                <button class="btn-s btn-danger" onclick="flipper.deleteSelected()">🗑️ Delete</button>
-                <button class="btn-s" style="grid-column: span 2" onclick="flipper.ls()">🔄 Refresh List</button>
-                <input type="file" id="fup" style="display:none">
-            </div>
-            <div id="fileList"></div>
+            <div id="curPath" style="padding:10px; font-size:10px; color:var(--accent); background:#000">/ext</div>
+            <div id="fileList" class="scroll-area"></div>
         </div>
 
-        <div class="terminal-container" id="term">
-            <div class="path-bar" style="background: #111;">
-                <span>Terminal Output</span>
-                <div>
-                    <button class="btn-s" onclick="flipper.send('\x03')">📡 RPC/Break</button>
-                    <button class="btn-s" onclick="flipper.toggleExpand()">🗗 Expand</button>
-                    <button class="btn-s" onclick="flipper.clearConsole()">📋 Clear</button>
-                </div>
+        <div class="terminal" id="termBox">
+            <div class="controls">
+                <span>TERMINAL</span>
+                <button class="btn-s" onclick="app.send('\x03')">📡 RPC/BREAK</button>
+                <button class="btn-s" onclick="app.toggleExp()">🗗 EXPAND</button>
+                <button class="btn-s" onclick="app.clear()">📋 CLEAR</button>
             </div>
-            <div id="console"></div>
-            <div class="input-area">
-                <input id="cli" placeholder="Type command...">
-                <button class="btn" id="send">Execute</button>
+            <div id="console" class="scroll-area"></div>
+            <div class="input-bar">
+                <input id="cli" placeholder="Command...">
+                <button class="btn" onclick="app.exec()">SEND</button>
             </div>
         </div>
 
-        <div class="info-panel">
-            <h4 style="color:var(--accent); margin-bottom: 15px;">System Info</h4>
-            <div class="info-item"><span class="info-label">🔋 Battery</span><span id="bat">--%</span></div>
-            <div class="info-item"><span class="info-label">🆔 Name</span><span id="name">--</span></div>
-            <div class="info-item"><span class="info-label">🛠️ Version</span><span id="fw">--</span></div>
-            <div class="info-item"><span class="info-label">📊 Space (/ext)</span><span id="space">--</span></div>
-            <button class="btn-s" style="width:100%" onclick="flipper.updateInfo()">🔄 Refresh Info</button>
+        <div class="info">
+            <div class="stat-box"><span class="stat-label">🔋 Battery</span><span id="bat">--%</span></div>
+            <div class="stat-box"><span class="stat-label">🆔 Name</span><span id="name">--</span></div>
+            <div class="stat-box"><span class="stat-label">🛠️ Version</span><span id="fw">--</span></div>
+            <div class="stat-box"><span class="stat-label">📊 Space (/ext)</span><span id="sd">--</span></div>
+            <button class="btn-s" onclick="app.info()">🔄 REFRESH INFO</button>
         </div>
     </div>
 
@@ -94,38 +98,45 @@
 class FlipperApp {
     constructor() {
         this.port = null; this.writer = null; this.reader = null;
-        this.path = '/ext'; this.buffer = ''; this.selectedFile = null;
+        this.connected = false; this.path = '/ext'; this.buffer = ''; this.selected = null;
         this.init();
     }
 
     init() {
-        document.getElementById('connBtn').onclick = () => this.start();
-        document.getElementById('send').onclick = () => this.exec();
-        document.getElementById('backBtn').onclick = () => this.goUp();
+        document.getElementById('connBtn').onclick = () => this.connected ? this.stop() : this.start();
         document.getElementById('cli').onkeydown = e => e.key === 'Enter' && this.exec();
-        document.getElementById('fup').onchange = e => this.upload(e.target.files[0]);
+        document.getElementById('u').onchange = e => this.upload(e.target.files[0]);
     }
 
     async start() {
-        this.port = await navigator.serial.requestPort();
-        await this.port.open({ baudRate: 115200 });
-        this.writer = this.port.writable.getWriter();
-        this.read();
-        this.updateInfo();
-        this.ls();
-        document.getElementById('connBtn').textContent = "Connected";
+        try {
+            this.port = await navigator.serial.requestPort();
+            await this.port.open({ baudRate: 115200 });
+            this.writer = this.port.writable.getWriter();
+            this.connected = true;
+            this.read();
+            document.getElementById('connBtn').textContent = "DISCONNECT";
+            setTimeout(() => { this.info(); this.ls(); }, 500);
+        } catch(e) { alert("Error: " + e.message); }
+    }
+
+    async stop() {
+        this.connected = false;
+        location.reload(); 
     }
 
     async read() {
         this.reader = this.port.readable.getReader();
         const dec = new TextDecoder();
-        while(true) {
-            const { value, done } = await this.reader.read();
-            if(done) break;
-            this.buffer += dec.decode(value);
-            let lines = this.buffer.split('\r\n');
-            this.buffer = lines.pop();
-            for(let l of lines) this.parse(l);
+        while(this.connected) {
+            try {
+                const { value, done } = await this.reader.read();
+                if(done) break;
+                this.buffer += dec.decode(value);
+                let lines = this.buffer.split('\r\n');
+                this.buffer = lines.pop();
+                for(let l of lines) this.parse(l);
+            } catch(e) { break; }
         }
     }
 
@@ -134,17 +145,18 @@ class FlipperApp {
         if(!line || line.includes('GattChar')) return;
         this.log(line);
 
-        if(line.includes('charge')) document.getElementById('bat').textContent = line.split(':')[1].trim() + '%';
-        if(line.includes('hardware_name')) document.getElementById('name').textContent = line.split(':')[1].trim();
-        if(line.includes('firmware_version')) document.getElementById('fw').textContent = line.split(':')[1].trim();
-        if(line.includes('Label:') || line.includes('Capacity:')) {
-            document.getElementById('space').textContent += line + ' ';
+        if(line.includes('charge:')) {
+            const m = line.match(/charge:\s*(\d+)/);
+            if(m) document.getElementById('bat').textContent = m[1] + '%';
         }
+        if(line.includes('hardware_name:')) document.getElementById('name').textContent = line.split(':')[1].trim();
+        if(line.includes('firmware_version:')) document.getElementById('fw').textContent = line.split(':')[1].trim();
+        if(line.includes('Capacity:')) document.getElementById('sd').textContent = line.split(':')[1].trim();
 
         if(line.startsWith('[D]') || line.startsWith('[F]')) {
             const isD = line.startsWith('[D]');
             const name = line.substring(3).trim().split(' ')[0];
-            this.addFileUI(name, isD);
+            this.renderRow(name, isD);
         }
     }
 
@@ -153,8 +165,12 @@ class FlipperApp {
         await this.writer.write(new TextEncoder().encode(t + '\r\n'));
     }
 
-    updateInfo() {
-        document.getElementById('space').textContent = '';
+    exec() {
+        const i = document.getElementById('cli');
+        this.send(i.value); i.value = '';
+    }
+
+    info() {
         this.send('device_info');
         this.send('power info');
         this.send('storage info /ext');
@@ -165,24 +181,22 @@ class FlipperApp {
         this.send(`storage list ${this.path}`);
     }
 
-    addFileUI(name, isDir) {
-        const l = document.getElementById('fileList');
-        const div = document.createElement('div');
-        div.className = 'file-row';
-        div.innerHTML = `<span>${isDir ? '📁' : '📄'} ${name}</span>`;
-        div.onclick = () => {
+    renderRow(name, isD) {
+        const list = document.getElementById('fileList');
+        const row = document.createElement('div');
+        row.className = 'file-row';
+        row.innerHTML = `<span>${isD ? '📁' : '📄'}</span> <span>${name}</span>`;
+        row.onclick = () => {
             document.querySelectorAll('.file-row').forEach(r => r.classList.remove('selected'));
-            div.classList.add('selected');
-            this.selectedFile = { name, isDir };
-            if(isDir) this.openDir(name);
+            row.classList.add('selected');
+            this.selected = { name, isD };
+            if(isD) {
+                this.path += (this.path.endsWith('/') ? '' : '/') + name;
+                document.getElementById('curPath').textContent = this.path;
+                this.ls();
+            }
         };
-        l.appendChild(div);
-    }
-
-    openDir(n) {
-        this.path += (this.path.endsWith('/') ? '' : '/') + n;
-        document.getElementById('curPath').textContent = this.path;
-        this.ls();
+        list.appendChild(row);
     }
 
     goUp() {
@@ -193,49 +207,44 @@ class FlipperApp {
         this.ls();
     }
 
-    newModal(type) {
-        const n = prompt(`Enter ${type} name:`);
-        if(!n) return;
-        if(type === 'folder') this.send(`storage mkdir ${this.path}/${n}`);
-        else this.send(`storage write ${this.path}/${n}`);
-        setTimeout(() => this.ls(), 500);
+    newDir() {
+        const n = prompt("Folder Name:");
+        if(n) { this.send(`storage mkdir ${this.path}/${n}`); setTimeout(()=>this.ls(), 500); }
     }
 
-    deleteSelected() {
-        if(!this.selectedFile) return alert('Select file first');
-        if(confirm(`Delete ${this.selectedFile.name}?`)) {
-            this.send(`storage remove ${this.path}/${this.selectedFile.name}`);
-            setTimeout(() => this.ls(), 500);
+    newFile() {
+        const n = prompt("File Name:");
+        if(n) { this.send(`storage write ${this.path}/${n}`); setTimeout(()=>this.ls(), 500); }
+    }
+
+    del() {
+        if(!this.selected) return;
+        if(confirm(`Delete ${this.selected.name}?`)) {
+            this.send(`storage remove ${this.path}/${this.selected.name}`);
+            setTimeout(()=>this.ls(), 500);
         }
     }
 
-    async upload(file) {
-        if(!file) return;
-        this.log("Upload: " + file.name);
-        this.send(`storage write ${this.path}/${file.name}`);
-        const buf = await file.arrayBuffer();
-        await this.writer.write(buf);
+    async upload(f) {
+        if(!f) return;
+        this.log("!!! Uploading: " + f.name);
+        this.send(`storage write ${this.path}/${f.name}`);
+        const b = await f.arrayBuffer();
+        await this.writer.write(b);
         this.send('\x03');
-        setTimeout(() => this.ls(), 1000);
+        setTimeout(()=>this.ls(), 1000);
     }
-
-    exec() {
-        const i = document.getElementById('cli');
-        this.send(i.value); i.value = '';
-    }
-
-    clearConsole() { document.getElementById('console').innerHTML = ''; }
-    toggleExpand() { document.getElementById('term').classList.toggle('expanded'); }
 
     log(m) {
         const c = document.getElementById('console');
-        const d = document.createElement('div');
-        d.textContent = "> " + m;
-        c.appendChild(d);
+        c.textContent += "> " + m + "\n";
         c.scrollTop = c.scrollHeight;
     }
+
+    clear() { document.getElementById('console').textContent = ''; }
+    toggleExp() { document.getElementById('termBox').classList.toggle('expanded'); }
 }
-const flipper = new FlipperApp();
+const app = new FlipperApp();
 </script>
 </body>
 </html>
