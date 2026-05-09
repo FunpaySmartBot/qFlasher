@@ -13,262 +13,228 @@
             --border: #333; --success: #00d4aa; --warn: #ffaa00; --error: #ff4444;
         }
         * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg-0); color: var(--text-0); height: 100vh; overflow: hidden; }
-        .app { display: grid; grid-template-columns: 300px 1fr 400px; grid-template-rows: 70px 1fr; height: 100vh; }
-        .topbar { grid-column: 1 / -1; background: var(--bg-1); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; justify-content: space-between; }
-        .status-group { display: flex; align-items: center; gap: 15px; }
-        .status { display: flex; align-items: center; gap: 8px; padding: 6px 12px; background: rgba(255,68,68,0.1); border-radius: 20px; font-size: 12px; }
+        body { font-family: 'Inter', monospace; background: var(--bg-0); color: var(--text-0); height: 100vh; overflow: hidden; }
+        .app { display: grid; grid-template-columns: 300px 1fr 500px; grid-template-rows: 70px 1fr; height: 100vh; }
+        .topbar { grid-column: 1 / -1; background: var(--bg-1); border-bottom: 1px solid var(--border); padding: 16px 24px; display: flex; align-items: center; gap: 20px; }
+        .logo { height: 40px; }
+        .status { display: flex; align-items: center; gap: 8px; padding: 8px 16px; background: rgba(255,68,68,0.1); border-radius: 20px; font-size: 13px; }
         .status.connected { background: rgba(0,212,170,0.2); }
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--error); }
+        .dot { width: 10px; height: 10px; border-radius: 50%; background: var(--error); }
         .dot.connected { background: var(--success); }
-        .sidebar { background: var(--bg-2); border-right: 1px solid var(--border); padding: 24px; }
-        .device-name { font-size: 18px; font-weight: 700; color: var(--accent); margin-bottom: 16px; }
-        .device-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-        .stat-item { background: var(--bg-3); padding: 10px; border-radius: 6px; border: 1px solid var(--border); }
-        .stat-label { color: var(--text-2); font-size: 11px; display: block; }
-        .stat-value { font-family: monospace; font-size: 13px; font-weight: 600; }
-        .main-content { background: var(--bg-0); display: flex; flex-direction: column; }
-        .file-toolbar { padding: 16px; border-bottom: 1px solid var(--border); display: flex; gap: 10px; background: var(--bg-1); }
-        .btn { padding: 8px 14px; border: 1px solid var(--border); background: var(--bg-2); color: var(--text-1); border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 500; transition: 0.2s; }
-        .btn:hover { background: var(--bg-3); border-color: var(--accent); }
-        .btn-accent { background: var(--accent); color: #000; border: none; font-weight: 600; }
-        .file-list { flex: 1; overflow-y: auto; padding: 16px; }
-        .console-area { background: #050505; border-left: 1px solid var(--border); display: flex; flex-direction: column; }
-        #console { flex: 1; padding: 16px; font-family: 'Courier New', monospace; font-size: 12px; overflow-y: auto; color: #00ff00; line-height: 1.4; }
-        .console-input-wrap { padding: 12px; border-top: 1px solid var(--border); display: flex; gap: 8px; align-items: center; }
-        #consoleInput { flex: 1; background: transparent; border: none; color: #fff; font-family: monospace; outline: none; }
+        .sidebar { background: var(--bg-2); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+        .device-info { padding: 24px; border-bottom: 1px solid var(--border); }
+        .device-name { font-size: 18px; font-weight: 600; margin-bottom: 12px; color: var(--accent); }
+        .device-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; font-size: 12px; }
+        .stat-item { display: flex; flex-direction: column; gap: 4px; }
+        .stat-label { color: var(--text-2); font-size: 11px; }
+        .connect-btn { width: 100%; padding: 14px; background: var(--accent); color: #000; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; margin: 12px 0; }
+        .connect-btn.connected { background: var(--error); }
+        .file-toolbar { padding: 16px 24px; border-bottom: 1px solid var(--border); display: flex; gap: 8px; flex-wrap: wrap; }
+        .btn { padding: 8px 14px; background: transparent; border: 1px solid var(--border); color: var(--text-0); border-radius: 6px; font-size: 12px; cursor: pointer; }
+        .btn.primary { background: var(--accent); color: #000; }
+        .path { padding: 12px 24px; font-size: 13px; color: var(--accent); border-bottom: 1px solid var(--border); }
+        .file-list { flex: 1; overflow-y: auto; }
+        .file-row { padding: 10px 24px; display: grid; grid-template-columns: 30px 1fr auto; gap: 10px; cursor: pointer; font-size: 13px; }
+        .file-row:hover { background: rgba(255,255,255,0.05); }
+        .console-panel { background: var(--bg-2); border-left: 1px solid var(--border); display: flex; flex-direction: column; }
+        #console { flex: 1; overflow-y: auto; padding: 20px; font-family: 'Consolas', monospace; font-size: 12px; background: #000; color: #0f0; line-height: 1.5; }
+        .console-input { padding: 16px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+        #consoleInput { flex: 1; padding: 10px; background: var(--bg-3); border: 1px solid var(--border); color: #fff; border-radius: 4px; }
+        .toast { position: fixed; top: 20px; right: 20px; padding: 12px 20px; border-radius: 8px; background: var(--accent); color: #000; z-index: 100; transform: translateX(200%); transition: 0.3s; }
+        .toast.show { transform: translateX(0); }
     </style>
 </head>
 <body>
-    <div class="app" id="appContainer">
-        <header class="topbar">
-            <div class="logo"><strong>qFlasher</strong> <small style="color: var(--text-2)">v2.2</small></div>
-            <div class="status-group">
-                <div class="status" id="status">
-                    <div class="dot" id="statusDot"></div>
-                    <span id="statusText">Disconnected</span>
-                </div>
-                <button class="btn btn-accent" id="connectBtn">🔌 Connect Device</button>
+    <div class="app">
+        <div class="topbar">
+            <div class="logo" style="font-weight: 700; color: var(--accent); font-size: 24px;">qFlasher</div>
+            <div class="status" id="status">
+                <div class="dot" id="statusDot"></div>
+                <span id="statusText">Disconnected</span>
             </div>
-        </header>
-
-        <aside class="sidebar">
-            <div class="device-name" id="info-name">Searching...</div>
-            <div class="device-stats">
-                <div class="stat-item">
-                    <span class="stat-label">🔋 Battery</span>
-                    <span class="stat-value" id="info-battery">--%</span>
+        </div>
+        <div class="sidebar">
+            <div class="device-info">
+                <div class="device-name" id="deviceName">Flipper Zero</div>
+                <div class="device-stats">
+                    <div class="stat-item"><div class="stat-label">Version</div><div id="versionInfo">-</div></div>
+                    <div class="stat-item"><div class="stat-label">Region</div><div id="regionInfo">-</div></div>
                 </div>
-                <div class="stat-item">
-                    <span class="stat-label">🛠️ Version</span>
-                    <span class="stat-value" id="info-version">n/a</span>
-                </div>
+                <button class="connect-btn" id="connectBtn">Connect Device</button>
             </div>
-            <div class="stat-item" style="margin-top: 12px; width: 100%">
-                <span class="stat-label">📊 SD Card</span>
-                <span class="stat-value" id="info-storage">-- / --</span>
-            </div>
-        </aside>
-
-        <main class="main-content">
             <div class="file-toolbar">
-                <button class="btn" id="newFolder">📁 New Folder</button>
-                <button class="btn" id="newFile">📄 New File</button>
-                <button class="btn" id="uploadBtn">⬆️ Upload</button>
-                <button class="btn" id="deleteBtn">🗑️ Delete</button>
-                <button class="btn" id="refreshBtn">🔄 Refresh</button>
+                <button class="btn primary" id="refreshBtn">Refresh Files</button>
+                <button class="btn" id="parentBtn">..</button>
             </div>
-            <div class="file-list" id="fileList">
-                <div style="text-align: center; color: var(--text-2); margin-top: 40px;">Connect Flipper to view files</div>
-            </div>
-        </main>
-
-        <section class="console-area">
-            <div style="padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; display: flex; justify-content: space-between;">
-                TERMINAL
-                <button class="btn" id="clearConsole" style="padding: 2px 6px; font-size: 10px">Clear</button>
-            </div>
+            <div class="path" id="pathDisplay">/ext</div>
+            <div id="fileList" class="file-list"></div>
+        </div>
+        <div class="console-panel">
             <div id="console"></div>
-            <div class="console-input-wrap">
-                <span style="color: var(--accent)">></span>
-                <input type="text" id="consoleInput" placeholder="Send CLI command...">
+            <div class="console-input">
+                <input id="consoleInput" placeholder="Send command...">
+                <button class="btn primary" id="sendCmd">Send</button>
             </div>
-        </section>
+        </div>
     </div>
+    <div id="toast" class="toast"></div>
 
-    <script>
-class UniversalFlipperManager {
+<script>
+class FlipperManager {
     constructor() {
-        this.port = null;
-        this.connected = false;
-        this.currentPath = "/ext";
+        this.port = null; this.reader = null; this.writer = null;
+        this.connected = false; this.buffer = '';
+        this.path = '/ext'; this.files = [];
         this.init();
     }
 
-    log(type, msg) {
-        const consoleEl = document.getElementById('console');
-        const line = document.createElement('div');
-        if(type === 'error') line.style.color = 'var(--error)';
-        if(type === 'success') line.style.color = 'var(--accent)';
-        line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-        consoleEl.appendChild(line);
-        consoleEl.scrollTop = consoleEl.scrollHeight;
+    init() {
+        document.getElementById('connectBtn').onclick = () => this.connected ? this.disconnect() : this.connect();
+        document.getElementById('sendCmd').onclick = () => this.exec();
+        document.getElementById('refreshBtn').onclick = () => this.ls();
+        document.getElementById('parentBtn').onclick = () => this.goUp();
+        document.getElementById('consoleInput').onkeydown = (e) => { if(e.key === 'Enter') this.exec(); };
     }
 
     async connect() {
         try {
             this.port = await navigator.serial.requestPort();
             await this.port.open({ baudRate: 115200 });
+            this.writer = this.port.writable.getWriter();
             this.connected = true;
-            this.updateUI(true);
-            this.log('success', 'Connected to Flipper Zero');
-            
+            this.updateStatus(true);
             this.readLoop();
-            
-            await this.write("\x03")
-            setTimeout(() => this.write("device_info\r\n"), 500);
-            setTimeout(() => this.ls(), 1000);
+            setTimeout(() => {
+                this.send('device_info');
+                this.ls();
+            }, 500);
         } catch (e) {
-            this.log('error', 'Connection failed: ' + e.message);
+            this.toast(e.message, true);
         }
     }
 
-  async disconnect() {
-    this.connected = false;
-    this.readLoopActive = false;
-
-    if (this.reader) {
-        try {
+    async disconnect() {
+        this.connected = false;
+        if (this.reader) {
             await this.reader.cancel();
             this.reader.releaseLock();
-        } catch (e) {
-            console.error("Error releasing reader:", e);
+            this.reader = null;
         }
-        this.reader = null;
-    }
-
-    if (this.writer) {
-        try {
+        if (this.writer) {
             this.writer.releaseLock();
-        } catch (e) {
-            console.error("Error releasing writer:", e);
+            this.writer = null;
         }
-        this.writer = null;
-    }
-
-    if (this.port) {
-        try {
+        if (this.port) {
             await this.port.close();
-        } catch (e) {
-            this.log('error', `Close port error: ${e.message}`);
+            this.port = null;
         }
-        this.port = null;
-    }
-
-    this.pending.clear();
-    this.buffer = '';
-    this.updateStatus(false);
-    this.resetDeviceInfo();
-    this.log('info', 'Disconnected');
-    this.showFileListError('Disconnected');
-}
-    async write(data) {
-        if (!this.connected) return;
-        const writer = this.port.writable.getWriter();
-        const encoder = new TextEncoder();
-        if (data === "\x03") {
-            await writer.write(new Uint8Array([0x03]));
-        } else {
-            await writer.write(encoder.encode(data));
-        }
-        writer.releaseLock();
+        this.updateStatus(false);
     }
 
     async readLoop() {
-        while (this.port.readable && this.connected) {
-            const reader = this.port.readable.getReader();
-            try {
-                const decoder = new TextDecoder();
-                while (true) {
-                    const { value, done } = await reader.read();
-                    if (done) break;
-                    const text = decoder.decode(value);
-                    this.parseResponse(text);
-                }
-            } catch (e) {
-                this.log('error', 'Read error: ' + e.message);
-            } finally {
-                reader.releaseLock();
+        const decoder = new TextDecoder();
+        this.reader = this.port.readable.getReader();
+        try {
+            while (this.connected) {
+                const { value, done } = await this.reader.read();
+                if (done) break;
+                this.buffer += decoder.decode(value, { stream: true });
+                let lines = this.buffer.split('\r\n');
+                this.buffer = lines.pop();
+                for (let line of lines) this.handleLine(line);
             }
+        } catch (e) { console.error(e); }
+    }
+
+    handleLine(line) {
+        const cleanLine = line.replace(/\x1B\[[0-9;]*[mK]/g, '').trim();
+        if (!cleanLine) return;
+        this.log(cleanLine);
+
+        if (cleanLine.includes('firmware_version')) document.getElementById('versionInfo').textContent = cleanLine.split(':')[1];
+        if (cleanLine.includes('hardware_name')) document.getElementById('deviceName').textContent = cleanLine.split(':')[1];
+        if (cleanLine.includes('hardware_region_provisioned')) document.getElementById('regionInfo').textContent = cleanLine.split(':')[1];
+
+        if (cleanLine.startsWith('[D]') || cleanLine.startsWith('[F]')) {
+            const isDir = cleanLine.startsWith('[D]');
+            const name = cleanLine.substring(3).trim().split(' ')[0];
+            this.files.push({ name, type: isDir ? 'folder' : 'file' });
+            this.renderFiles();
         }
     }
 
-    parseResponse(text) {
-        const consoleEl = document.getElementById('console');
-        consoleEl.innerText += text;
-        consoleEl.scrollTop = consoleEl.scrollHeight;
+    async send(text) {
+        if (!this.writer) return;
+        await this.writer.write(new TextEncoder().encode(text + '\r\n'));
+    }
 
-        if (text.includes("battery_level:")) {
-            const val = text.match(/battery_level:\s*(\d+)/);
-            if (val) document.getElementById('info-battery').textContent = val[1] + "%";
+    exec() {
+        const input = document.getElementById('consoleInput');
+        this.send(input.value);
+        input.value = '';
+    }
+
+    ls() {
+        this.files = [];
+        this.renderFiles();
+        this.send(`storage list ${this.path}`);
+    }
+
+    goUp() {
+        if (this.path === '/ext') return;
+        const parts = this.path.split('/');
+        parts.pop();
+        this.path = parts.join('/') || '/';
+        document.getElementById('pathDisplay').textContent = this.path;
+        this.ls();
+    }
+
+    open(name, type) {
+        if (type === 'folder') {
+            this.path += (this.path.endsWith('/') ? '' : '/') + name;
+            document.getElementById('pathDisplay').textContent = this.path;
+            this.ls();
         }
-        if (text.includes("hardware_name:")) {
-            const val = text.match(/hardware_name:\s*(\w+)/);
-            if (val) document.getElementById('info-name').textContent = val[1];
-        }
     }
 
-    async ls() {
-        if (!this.connected) return;
-        this.log('info', 'Updating file list...');
-        document.getElementById('fileList').innerHTML = '';
-        await this.write(`storage list ${this.currentPath}\r\n`);
+    renderFiles() {
+        const list = document.getElementById('fileList');
+        list.innerHTML = this.files.map(f => `
+            <div class="file-row" onclick="manager.open('${f.name}', '${f.type}')">
+                <span>${f.type === 'folder' ? '📁' : '📄'}</span>
+                <span>${f.name}</span>
+                <span style="color:var(--text-2); font-size:10px;">${f.type}</span>
+            </div>
+        `).join('');
     }
 
-    async upload(files) {
-        if (!this.connected) return;
-        for (let file of files) {
-            this.log('warn', `Uploading ${file.name}...`);
-            const buffer = await file.arrayBuffer();
-            const data = new Uint8Array(buffer);
-            
-            await this.write(`storage write ${this.currentPath}/${file.name} ${data.length}\r\n`);
-            const writer = this.port.writable.getWriter();
-            await writer.write(data);
-            writer.releaseLock();
-            
-            this.log('success', `File ${file.name} sent!`);
-        }
-        setTimeout(() => this.ls(), 800);
+    log(msg) {
+        const el = document.getElementById('console');
+        const line = document.createElement('div');
+        line.textContent = msg;
+        el.appendChild(line);
+        el.scrollTop = el.scrollHeight;
+        if (el.childNodes.length > 100) el.removeChild(el.firstChild);
     }
 
-    updateUI(isConnected) {
-        document.getElementById('status').classList.toggle('connected', isConnected);
-        document.getElementById('statusDot').classList.toggle('connected', isConnected);
-        document.getElementById('statusText').textContent = isConnected ? 'Connected' : 'Disconnected';
-        document.getElementById('connectBtn').textContent = isConnected ? '🔌 Disconnect' : '🔌 Connect Device';
+    updateStatus(conn) {
+        this.connected = conn;
+        document.getElementById('status').classList.toggle('connected', conn);
+        document.getElementById('statusDot').classList.toggle('connected', conn);
+        document.getElementById('statusText').textContent = conn ? 'Connected' : 'Disconnected';
+        document.getElementById('connectBtn').textContent = conn ? 'Disconnect' : 'Connect Device';
+        document.getElementById('connectBtn').classList.toggle('connected', conn);
     }
 
-    init() {
-        document.getElementById('connectBtn').onclick = () => this.connected ? this.disconnect() : this.connect();
-        document.getElementById('refreshBtn').onclick = () => this.ls();
-        document.getElementById('clearConsole').onclick = () => document.getElementById('console').innerHTML = '';
-        document.getElementById('consoleInput').onkeydown = e => {
-            if (e.key === 'Enter') {
-                this.write(e.target.value + "\r\n");
-                e.target.value = '';
-            }
-        };
-        document.getElementById('uploadBtn').onclick = () => {
-            const inp = document.createElement('input');
-            inp.type = 'file';
-            inp.onchange = e => this.upload(e.target.files);
-            inp.click();
-        };
+    toast(msg, err = false) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.style.background = err ? 'var(--error)' : 'var(--accent)';
+        t.classList.add('show');
+        setTimeout(() => t.classList.remove('show'), 3000);
     }
 }
-
-const qflasher = new UniversalFlipperManager();
-    </script>
+const manager = new FlipperManager();
+</script>
 </body>
 </html>
