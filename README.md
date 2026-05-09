@@ -1,7 +1,3 @@
-
-
-# qFlasher README - COMPLETE SINGLE FILE
-
 ![qFlasher Logo](https://raw.githubusercontent.com/FunpaySmartBot/qFlasher/refs/heads/main/logo.png)
 
 qFlasher - Flipper Zero Web File Manager + RPC Console
