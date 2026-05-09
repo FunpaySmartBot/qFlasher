@@ -1,331 +1,281 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>qFlasher PRO - Momentum Edition</title>
+    <title>qFlasher PRO | Momentum</title>
     <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-dark: #050505;
-            --bg-panel: #0f0f0f;
-            --bg-item: #161616;
-            --accent: #00ffcc; /* Яркий неон */
-            --accent-dim: rgba(0, 255, 204, 0.15);
+            --bg-body: #080808;
+            --bg-card: #121212;
+            --accent: #00ffcc;
+            --accent-dim: rgba(0, 255, 204, 0.1);
             --border: #222;
-            --text-main: #eee;
-            --text-dim: #888;
+            --text: #eee;
+            --text-dim: #666;
             --error: #ff4444;
-            --folder: #bb86fc;
         }
+
+        /* ГЛОБАЛЬНЫЙ СКРОЛЛБАР */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-body); }
+        ::-webkit-scrollbar-thumb { 
+            background: #333; 
+            border-radius: 4px; 
+            border: 2px solid var(--bg-body);
+        }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
-        /* ГАРАНТИРОВАННЫЕ СКРОЛЛБАРЫ */
-        ::-webkit-scrollbar {
-            width: 10px !important;
-            height: 10px !important;
-            display: block !important;
-        }
-        ::-webkit-scrollbar-track { background: var(--bg-dark) !important; }
-        ::-webkit-scrollbar-thumb { 
-            background: #333 !important; 
-            border-radius: 5px !important;
-            border: 2px solid var(--bg-dark) !important;
-        }
-        ::-webkit-scrollbar-thumb:hover { background: var(--accent) !important; }
-
         body {
             font-family: 'Inter', sans-serif;
-            background: var(--bg-dark);
-            color: var(--text-main);
+            background: var(--bg-body);
+            color: var(--text);
             height: 100vh;
-            overflow: hidden;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
         }
 
-        .app-grid {
+        /* TOPBAR */
+        header {
+            height: 60px;
+            padding: 0 20px;
+            background: #000;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .logo { font-weight: 800; font-size: 1.2rem; color: var(--accent); }
+
+        /* GRID LAYOUT */
+        .main-layout {
             display: grid;
             grid-template-columns: 320px 1fr 450px;
             flex: 1;
             overflow: hidden;
         }
 
-        /* HEADER */
-        header {
-            height: 65px;
-            background: var(--bg-panel);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            padding: 0 25px;
-            justify-content: space-between;
-            z-index: 10;
-        }
-
-        .logo-area { display: flex; align-items: center; gap: 15px; }
-        .logo-text { font-weight: 800; font-size: 20px; color: var(--accent); letter-spacing: -1px; }
-
-        /* SIDEBAR / DEVICE INFO */
+        /* SIDEBAR */
         .sidebar {
-            background: var(--bg-panel);
+            background: var(--bg-card);
             border-right: 1px solid var(--border);
+            padding: 20px;
             display: flex;
             flex-direction: column;
+            gap: 15px;
         }
 
-        .device-card {
-            padding: 20px;
-            background: linear-gradient(145deg, #111, #0a0a0a);
-            margin: 15px;
-            border-radius: 12px;
+        .stat-card {
+            background: #000;
             border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 15px;
         }
 
-        .stat-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 15px;
-        }
-
-        .stat-box {
-            background: var(--bg-dark);
-            padding: 10px;
-            border-radius: 6px;
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-        }
-
-        .stat-label { color: var(--text-dim); font-size: 10px; text-transform: uppercase; margin-bottom: 4px; }
+        .stat-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 5px; display: flex; align-items: center; gap: 5px; }
+        .stat-value { font-family: 'JetBrains Mono', monospace; font-size: 14px; color: var(--accent); }
 
         /* FILE MANAGER */
-        .file-manager {
+        .explorer {
             display: flex;
             flex-direction: column;
-            background: var(--bg-dark);
-            position: relative;
+            background: #000;
         }
 
         .toolbar {
-            padding: 15px 20px;
-            background: var(--bg-panel);
+            padding: 10px 20px;
+            background: var(--bg-card);
             border-bottom: 1px solid var(--border);
             display: flex;
             gap: 10px;
-            flex-wrap: wrap;
         }
 
-        .file-list {
+        .path-bar {
+            padding: 10px 20px;
+            font-size: 12px;
+            font-family: 'JetBrains Mono';
+            background: #0a0a0a;
+            color: var(--accent);
+            border-bottom: 1px solid var(--border);
+        }
+
+        #file-list {
             flex: 1;
-            overflow-y: scroll !important; /* Всегда активен скролл */
+            overflow-y: auto;
             padding: 10px;
         }
 
         .file-item {
             display: grid;
-            grid-template-columns: 32px 1fr 80px;
-            align-items: center;
+            grid-template-columns: 30px 1fr 100px;
             padding: 10px 15px;
-            margin-bottom: 4px;
-            border-radius: 8px;
+            border-radius: 6px;
             cursor: pointer;
-            transition: 0.2s;
-            font-size: 14px;
-            border: 1px solid transparent;
+            font-size: 13px;
+            transition: 0.1s;
+            align-items: center;
         }
 
-        .file-item:hover { background: var(--bg-item); border-color: #333; }
-        .file-item.selected { background: var(--accent-dim); border-color: var(--accent); }
-
-        .icon-folder { color: var(--folder); }
-        .icon-file { color: var(--accent); }
+        .file-item:hover { background: #1a1a1a; }
+        .file-item.selected { background: var(--accent-dim); border: 1px solid var(--accent); }
 
         /* CONSOLE */
-        .console-area {
-            background: var(--bg-panel);
+        .terminal-container {
+            background: #000;
             border-left: 1px solid var(--border);
             display: flex;
             flex-direction: column;
         }
 
-        #console-output {
+        #console-out {
             flex: 1;
-            overflow-y: scroll !important;
-            background: #000;
+            overflow-y: scroll;
             padding: 15px;
             font-family: 'JetBrains Mono', monospace;
-            font-size: 12px;
-            line-height: 1.6;
+            font-size: 11px;
+            line-height: 1.5;
             color: #00ff66;
+            background: #050505;
         }
 
-        .console-input-wrap {
+        .term-input-box {
             padding: 15px;
-            background: var(--bg-panel);
             border-top: 1px solid var(--border);
             display: flex;
             gap: 10px;
         }
 
-        input[type="text"] {
-            flex: 1;
-            background: var(--bg-dark);
-            border: 1px solid var(--border);
-            color: white;
-            padding: 10px 15px;
-            border-radius: 6px;
-            outline: none;
-        }
-
-        input[type="text"]:focus { border-color: var(--accent); }
-
+        /* UI ELEMENTS */
         .btn {
-            background: var(--bg-item);
-            color: white;
-            border: 1px solid var(--border);
-            padding: 8px 16px;
-            border-radius: 6px;
+            background: #222;
+            color: #fff;
+            border: 1px solid #333;
+            padding: 8px 12px;
+            border-radius: 4px;
             cursor: pointer;
-            font-weight: 600;
-            font-size: 12px;
-            transition: 0.2s;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
         }
 
         .btn:hover { border-color: var(--accent); color: var(--accent); }
-        .btn.primary { background: var(--accent); color: black; border: none; }
-        .btn.danger { color: var(--error); }
-        .btn.danger:hover { background: var(--error); color: white; }
+        .btn.primary { background: var(--accent); color: #000; border: none; }
+        .btn.danger { color: var(--error); border-color: rgba(255,68,68,0.3); }
+        .btn.danger:hover { background: var(--error); color: #fff; }
 
-        /* PATH BAR */
-        .path-bar {
-            padding: 8px 20px;
+        input {
             background: #111;
-            font-size: 11px;
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--accent);
-            border-bottom: 1px solid var(--border);
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 4px;
+            flex: 1;
+            font-family: 'JetBrains Mono';
         }
 
-        .path-seg { cursor: pointer; padding: 2px 4px; border-radius: 3px; }
-        .path-seg:hover { background: var(--accent); color: black; }
-
-        .modal {
-            position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-            display: none; align-items: center; justify-content: center; z-index: 1000;
+        /* MODAL */
+        #modal {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.9);
+            display: none; align-items: center; justify-content: center; z-index: 100;
         }
     </style>
 </head>
 <body>
 
 <header>
-    <div class="logo-area">
-        <div class="logo-text">qFlasher PRO</div>
-    </div>
-    <div id="connection-status" style="font-size: 12px; color: var(--text-dim);">
-        ⚪ Waiting for connection...
-    </div>
-    <button id="connectBtn" class="btn primary">CONNECT FLIPPER</button>
+    <div class="logo">qFlasher PRO</div>
+    <div id="status" style="font-size: 11px; color: var(--text-dim);">SYSTEM READY</div>
+    <button id="connectBtn" class="btn primary">CONNECT DEVICE</button>
 </header>
 
-<div class="app-grid">
+<div class="main-layout">
     <div class="sidebar">
-        <div class="device-card">
-            <div id="deviceName" style="font-weight: 800; font-size: 18px;">---</div>
-            <div class="stat-grid">
-                <div class="stat-box">
-                    <div class="stat-label">Battery</div>
-                    <div id="stat-bat">--%</div>
-                </div>
-                <div class="stat-box">
-                    <div class="stat-label">Firmware</div>
-                    <div id="stat-fw" style="font-size: 10px;">---</div>
-                </div>
-                <div class="stat-box" style="grid-column: span 2;">
-                    <div class="stat-label">SD Card Space</div>
-                    <div id="stat-sd">---</div>
-                </div>
-            </div>
+        <div class="stat-card">
+            <div class="stat-label">🔋 Battery</div>
+            <div id="bat-val" class="stat-value">--%</div>
         </div>
-        <div style="padding: 0 15px;">
-            <button class="btn" style="width: 100%;" onclick="app.refreshInfo()">🔄 Update Info</button>
+        <div class="stat-card">
+            <div class="stat-label">🆔 Device Name</div>
+            <div id="name-val" class="stat-value">---</div>
         </div>
+        <div class="stat-card">
+            <div class="stat-label">🛠️ Firmware</div>
+            <div id="fw-val" class="stat-value">---</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-label">💾 SD Space</div>
+            <div id="sd-val" class="stat-value">---</div>
+        </div>
+        <button class="btn" style="margin-top: 10px;" onclick="app.refreshAll()">🔄 REFRESH INFO</button>
     </div>
 
-    <div class="file-manager">
+    <div class="explorer">
         <div class="toolbar">
-            <button class="btn" onclick="app.modal('folder')">📁 New Folder</button>
-            <button class="btn" onclick="app.modal('file')">📄 New File</button>
-            <button class="btn" onclick="document.getElementById('fileInp').click()">⬆️ Upload</button>
-            <button class="btn danger" onclick="app.deleteSelected()">🗑️ Delete</button>
-            <input type="file" id="fileInp" style="display:none" multiple>
+            <button class="btn" onclick="app.openModal('folder')">+ FOLDER</button>
+            <button class="btn" onclick="app.openModal('file')">+ FILE</button>
+            <button class="btn danger" onclick="app.deleteSelected()">DELETE</button>
+            <button class="btn" onclick="app.ls()">REFRESH</button>
         </div>
-        <div class="path-bar" id="path-display">/ext</div>
-        <div class="file-list" id="file-list-view">
-            </div>
+        <div class="path-bar" id="current-path">/ext</div>
+        <div id="file-list"></div>
     </div>
 
-    <div class="console-area">
-        <div style="padding: 10px 15px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center;">
-            <span style="font-size: 12px; font-weight: bold;">RAW TERMINAL</span>
-            <button class="btn" onclick="app.clearConsole()">Clear</button>
-        </div>
-        <div id="console-output"></div>
-        <div class="console-input-wrap">
-            <input type="text" id="cli-input" placeholder='{"method":"storage_list","params":{"path":"/ext"}}'>
+    <div class="terminal-container">
+        <div id="console-out"></div>
+        <div class="term-input-box">
+            <input type="text" id="raw-input" placeholder='{"method":"storage_info","params":{"path":"/ext"}}'>
             <button class="btn primary" onclick="app.sendRaw()">EXEC</button>
         </div>
     </div>
 </div>
 
-<div class="modal" id="modal">
-    <div style="background: var(--bg-panel); padding: 30px; border-radius: 12px; border: 1px solid var(--accent); width: 350px;">
-        <h3 id="modal-title" style="margin-bottom: 15px;">New Item</h3>
-        <input type="text" id="modal-input" style="width: 100%; margin-bottom: 20px;" placeholder="Name...">
+<div id="modal">
+    <div style="background: var(--bg-card); padding: 25px; border-radius: 12px; border: 1px solid var(--accent); width: 320px;">
+        <h4 id="modal-title" style="margin-bottom: 15px;">New Item</h4>
+        <input type="text" id="modal-input" style="width:100%; margin-bottom: 20px;">
         <div style="display: flex; gap: 10px; justify-content: flex-end;">
-            <button class="btn" onclick="app.closeModal()">Cancel</button>
-            <button class="btn primary" id="modal-confirm">Create</button>
+            <button class="btn" onclick="app.closeModal()">CANCEL</button>
+            <button class="btn primary" id="modal-ok">CREATE</button>
         </div>
     </div>
 </div>
 
 <script>
-class FlipperManager {
+class FlipperApp {
     constructor() {
-        this.port = null; this.reader = null; this.writer = null;
+        this.port = null;
+        this.reader = null;
+        this.writer = null;
         this.currentPath = '/ext';
-        this.files = [];
-        this.selected = null;
+        this.selectedFile = null;
         this.buffer = '';
-        this.init();
+        this.setupListeners();
     }
 
-    init() {
+    setupListeners() {
         document.getElementById('connectBtn').onclick = () => this.toggleConnect();
-        document.getElementById('cli-input').onkeydown = (e) => e.key === 'Enter' && this.sendRaw();
-        document.getElementById('fileInp').onchange = (e) => this.handleUpload(e.target.files);
+        document.getElementById('raw-input').onkeydown = (e) => e.key === 'Enter' && this.sendRaw();
     }
 
     async toggleConnect() {
-        if (this.port) {
-            location.reload(); // Простой способ сброса
-            return;
-        }
+        if (this.port) { location.reload(); return; }
         try {
             this.port = await navigator.serial.requestPort();
             await this.port.open({ baudRate: 115200 });
             this.writer = this.port.writable.getWriter();
             document.getElementById('connectBtn').textContent = 'DISCONNECT';
-            document.getElementById('connection-status').textContent = '🟢 Connected';
-            this.startReading();
-            setTimeout(() => { this.refreshInfo(); this.ls(); }, 500);
-        } catch (e) {
-            console.error(e);
-        }
+            document.getElementById('connectBtn').classList.add('danger');
+            this.readLoop();
+            setTimeout(() => { this.refreshAll(); this.ls(); }, 500);
+        } catch (e) { this.log("Error: " + e.message); }
     }
 
-    async startReading() {
+    async readLoop() {
         this.reader = this.port.readable.getReader();
         const decoder = new TextDecoder();
         try {
@@ -335,121 +285,133 @@ class FlipperManager {
                 this.buffer += decoder.decode(value, { stream: true });
                 let lines = this.buffer.split('\n');
                 this.buffer = lines.pop();
-                for (let line of lines) this.handleLine(line.trim());
+                for (let line of lines) this.handleData(line.trim());
             }
-        } catch (e) { console.error("Read Error:", e); }
+        } catch (e) { this.log("Read error: " + e.message); }
     }
 
-    handleLine(line) {
+    handleData(line) {
         if (!line) return;
         this.log(line);
         try {
             const data = JSON.parse(line);
+            
+            // Обработка списка файлов
             if (data.result?.files) {
-                this.files = data.result.files;
-                this.renderFiles();
+                this.renderFiles(data.result.files);
             }
-            // Momentum/Unleashed Info Parsing
-            if (data.result?.charge !== undefined) document.getElementById('stat-bat').textContent = data.result.charge + '%';
-            if (data.result?.version_string) document.getElementById('stat-fw').textContent = data.result.version_string;
-            if (data.result?.hardware_name) document.getElementById('deviceName').textContent = data.result.hardware_name;
+
+            // Обработка информации (Momentum format)
+            if (data.result?.charge !== undefined) document.getElementById('bat-val').textContent = data.result.charge + '%';
+            if (data.result?.hardware_name) document.getElementById('name-val').textContent = data.result.hardware_name;
+            if (data.result?.version_string) document.getElementById('fw-val').textContent = data.result.version_string;
             if (data.result?.free_space) {
-                let mb = (data.result.free_space / (1024 * 1024)).toFixed(2);
-                document.getElementById('stat-sd').textContent = mb + ' MB Free';
+                const mb = (data.result.free_space / (1024 * 1024)).toFixed(1);
+                document.getElementById('sd-val').textContent = mb + ' MB FREE';
             }
-        } catch (e) { /* Не JSON - игнорим */ }
+        } catch (e) {}
     }
 
     async rpc(obj) {
         if (!this.writer) return;
-        const msg = JSON.stringify(obj) + '\n';
-        await this.writer.write(new TextEncoder().encode(msg));
+        const payload = JSON.stringify(obj) + '\n';
+        await this.writer.write(new TextEncoder().encode(payload));
     }
 
     ls(path = this.currentPath) {
         this.currentPath = path;
-        document.getElementById('path-display').textContent = path;
+        document.getElementById('current-path').textContent = path;
         this.rpc({ method: "storage_list", params: { path } });
     }
 
-    renderFiles() {
-        const view = document.getElementById('file-list-view');
-        view.innerHTML = '';
-        this.files.forEach(f => {
-            const isDir = f.type === 'folder' || (typeof f === 'string' && f.endsWith('/'));
-            const name = typeof f === 'object' ? f.name : f;
+    renderFiles(files) {
+        const container = document.getElementById('file-list');
+        container.innerHTML = '';
+        files.forEach(f => {
+            const name = typeof f === 'string' ? f : f.name;
+            const isDir = f.type === 'folder' || name.endsWith('/');
             
             const el = document.createElement('div');
             el.className = 'file-item';
             el.innerHTML = `
-                <span class="${isDir ? 'icon-folder' : 'icon-file'}">${isDir ? '📁' : '📄'}</span>
-                <span style="overflow:hidden; text-overflow:ellipsis;">${name}</span>
-                <span style="color:#555; text-align:right;">${f.size ? (f.size/1024).toFixed(1)+'k' : ''}</span>
+                <span>${isDir ? '📁' : '📄'}</span>
+                <span>${name}</span>
+                <span style="color:#444; font-size:10px; text-align:right">${f.size ? (f.size/1024).toFixed(1)+'KB' : ''}</span>
             `;
+            
             el.onclick = () => {
                 document.querySelectorAll('.file-item').forEach(i => i.classList.remove('selected'));
                 el.classList.add('selected');
-                this.selected = { name, isDir };
+                this.selectedFile = { name, isDir };
             };
-            el.ondblclick = () => isDir ? this.ls(this.currentPath + (this.currentPath === '/' ? '' : '/') + name) : null;
-            view.appendChild(el);
+
+            el.ondblclick = () => {
+                if (isDir) {
+                    const nextPath = (this.currentPath + '/' + name).replace(/\/+/g, '/');
+                    this.ls(nextPath);
+                }
+            };
+            container.appendChild(el);
         });
     }
 
     async deleteSelected() {
-        if (!this.selected) return;
-        if (!confirm(`Delete ${this.selected.name}?`)) return;
-        const fullPath = `${this.currentPath}/${this.selected.name}`.replace('//', '/');
-        await this.rpc({ method: "storage_remove", params: { path: fullPath } });
-        setTimeout(() => this.ls(), 500);
+        if (!this.selectedFile) return;
+        if (!confirm(`Удалить ${this.selectedFile.name}?`)) return;
+        
+        const path = (this.currentPath + '/' + this.selectedFile.name).replace(/\/+/g, '/');
+        await this.rpc({ method: "storage_remove", params: { path } });
+        this.selectedFile = null;
+        setTimeout(() => this.ls(), 400);
     }
 
-    modal(type) {
+    openModal(type) {
         const m = document.getElementById('modal');
-        const title = document.getElementById('modal-title');
-        const confirmBtn = document.getElementById('modal-confirm');
-        title.textContent = type === 'folder' ? 'Create Folder' : 'Create Empty File';
+        const inp = document.getElementById('modal-input');
+        const ok = document.getElementById('modal-ok');
         m.style.display = 'flex';
-        confirmBtn.onclick = () => {
-            const name = document.getElementById('modal-input').value;
-            if (name) {
-                const fullPath = `${this.currentPath}/${name}`.replace('//', '/');
-                this.rpc({ method: type === 'folder' ? "storage_mkdir" : "storage_write", params: { path: fullPath } });
-                this.closeModal();
-                setTimeout(() => this.ls(), 600);
+        document.getElementById('modal-title').textContent = type === 'folder' ? 'НОВАЯ ПАПКА' : 'НОВЫЙ ФАЙЛ';
+        
+        ok.onclick = async () => {
+            if (!inp.value) return;
+            const path = (this.currentPath + '/' + inp.value).replace(/\/+/g, '/');
+            if (type === 'folder') {
+                await this.rpc({ method: "storage_mkdir", params: { path } });
+            } else {
+                await this.rpc({ method: "storage_write", params: { path, data: "" } });
             }
+            this.closeModal();
+            setTimeout(() => this.ls(), 500);
         };
     }
 
     closeModal() { document.getElementById('modal').style.display = 'none'; }
 
-    refreshInfo() {
+    refreshAll() {
         this.rpc({ method: "power_get_info" });
         this.rpc({ method: "system_info" });
         this.rpc({ method: "storage_info", params: { path: "/ext" } });
     }
 
     log(msg) {
-        const out = document.getElementById('console-output');
+        const out = document.getElementById('console-out');
         const line = document.createElement('div');
         line.textContent = `> ${msg}`;
         out.appendChild(line);
         out.scrollTop = out.scrollHeight;
     }
 
-    clearConsole() { document.getElementById('console-output').innerHTML = ''; }
-
     sendRaw() {
-        const input = document.getElementById('cli-input');
+        const inp = document.getElementById('raw-input');
         try {
-            const cmd = JSON.parse(input.value);
-            this.rpc(cmd);
-            input.value = '';
-        } catch (e) { alert("Invalid JSON Command"); }
+            const json = JSON.parse(inp.value);
+            this.rpc(json);
+            inp.value = '';
+        } catch (e) { alert("Ошибка JSON"); }
     }
 }
 
-const app = new FlipperManager();
+const app = new FlipperApp();
 </script>
 </body>
 </html>
