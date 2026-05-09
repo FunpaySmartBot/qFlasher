@@ -125,8 +125,7 @@ class UniversalFlipperManager {
             
             this.readLoop();
             
-            // Initialization
-            await this.write("\x03"); // Break any current process
+            await this.write("\x03")
             setTimeout(() => this.write("device_info\r\n"), 500);
             setTimeout(() => this.ls(), 1000);
         } catch (e) {
@@ -134,18 +133,49 @@ class UniversalFlipperManager {
         }
     }
 
-    async disconnect() {
-        if (this.port) await this.port.close();
-        this.connected = false;
-        this.updateUI(false);
-        this.log('info', 'Disconnected');
+  async disconnect() {
+    this.connected = false;
+    this.readLoopActive = false;
+
+    if (this.reader) {
+        try {
+            await this.reader.cancel();
+            this.reader.releaseLock();
+        } catch (e) {
+            console.error("Error releasing reader:", e);
+        }
+        this.reader = null;
     }
 
+    if (this.writer) {
+        try {
+            this.writer.releaseLock();
+        } catch (e) {
+            console.error("Error releasing writer:", e);
+        }
+        this.writer = null;
+    }
+
+    if (this.port) {
+        try {
+            await this.port.close();
+        } catch (e) {
+            this.log('error', `Close port error: ${e.message}`);
+        }
+        this.port = null;
+    }
+
+    this.pending.clear();
+    this.buffer = '';
+    this.updateStatus(false);
+    this.resetDeviceInfo();
+    this.log('info', 'Disconnected');
+    this.showFileListError('Disconnected');
+}
     async write(data) {
         if (!this.connected) return;
         const writer = this.port.writable.getWriter();
         const encoder = new TextEncoder();
-        // Handle escaped hex like \x03
         if (data === "\x03") {
             await writer.write(new Uint8Array([0x03]));
         } else {
@@ -174,12 +204,10 @@ class UniversalFlipperManager {
     }
 
     parseResponse(text) {
-        // Echo to console
         const consoleEl = document.getElementById('console');
         consoleEl.innerText += text;
         consoleEl.scrollTop = consoleEl.scrollHeight;
 
-        // Extract Info
         if (text.includes("battery_level:")) {
             const val = text.match(/battery_level:\s*(\d+)/);
             if (val) document.getElementById('info-battery').textContent = val[1] + "%";
@@ -205,7 +233,6 @@ class UniversalFlipperManager {
             const data = new Uint8Array(buffer);
             
             await this.write(`storage write ${this.currentPath}/${file.name} ${data.length}\r\n`);
-            // We write the raw bytes directly
             const writer = this.port.writable.getWriter();
             await writer.write(data);
             writer.releaseLock();
