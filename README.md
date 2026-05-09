@@ -4,15 +4,11 @@ qFlasher - Flipper Zero Web File Manager + RPC Console
 
 # FEATURES:
 ```
-File: 📁 New Folder | 📄 New File | ⬆️ Upload | 🗑️ Delete | 🔄 Refresh
-Info: 🔋 Battery | 🆔 Name | 📊 Space | 🛠️ Version
-Console: 📡 RPC | 🔄 Expand (⬜/🗗) | 📋 Clear
+File: 📁 New Folder | 📄 New File | ⬆️ Upload | 🔄 Refresh
+Info: 🔋 Battery | 🆔 Name  | 🛠️ Version
+Console: 📡 RPC |  📋 Clear
 ```
 
-# SHORTCUTS:
-```
-Ctrl+N = New Folder | Ctrl+E = New File | Ctrl+Click = Multi-select
-```
 # QUICK START:
 ```
 1. Flipper Zero -> USB -> Chrome/Edge
@@ -33,7 +29,6 @@ New Folder (📁) -> Creates directory
 New File (📄) -> Creates empty file
 Upload (⬆️) -> Multi-file upload
 Refresh (🔄) -> Reload directory
-Delete (🗑️) -> Selected files/folders
 ```
 # CONSOLE COMMANDS:
 ```
@@ -42,6 +37,7 @@ Delete (🗑️) -> Selected files/folders
 {"method":"power_info"}                             Battery
 {"method":"storage_info"}                           Free space
 {"method":"storage_mkdir","params":{"path":"/test"}} Create folder
+or just type help / ? in console for some fun commands
 ```
 # TROUBLESHOOTING:
 ```
@@ -58,6 +54,6 @@ Free for all Flipper projects
 CREATOR: FunpaySmartBot
 
 ROADMAP: Download | Bulk ops | Drag-drop | Themes
-VERSION: v1.3 - Ultimate Flipper companion 🚀
+VERSION: v5.4 - Ultimate Flipper companion 🚀
 
 ⭐ Star if useful! Works with ALL RPC firmwares!
