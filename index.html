@@ -200,10 +200,57 @@ class FlipperApp {
     exec() { 
         const i = document.getElementById('cli'); 
         if(!i.value) return;
-        this.send(i.value); 
+
+        const raw = String(i.value);
+        const trimmed = raw.trim();
+        if(!trimmed) return;
+        const lower = trimmed.toLowerCase();
+        const aliases = {
+            'aliases': '__qflasher_list_aliases__',
+            'cmds': '__qflasher_list_aliases__',
+            '?': '__qflasher_list_aliases__',
+
+            'power': 'power info',
+            'info': 'device_info;power info',
+            'ls': 'storage list /ext',
+            'free': 'free',
+            'uptime': 'uptime',
+            'date': 'date',
+            'neofetch': 'neofetch'
+        };
+
+        const mapped = aliases[lower];
+
+        if(mapped === '__qflasher_list_aliases__') {
+            this.log('Custom commands (aliases):');
+            this.log('  aliases | cmds | ?   -> show this list');
+            this.log('  power                -> power info');
+            this.log('  info                 -> device_info + power info');
+            this.log('  ls                   -> storage list /ext');
+            this.log('  free                 -> free');
+            this.log('  uptime               -> uptime');
+            this.log('  date                 -> date');
+            this.log('  neofetch             -> neofetch');
+            i.value = '';
+            i.focus();
+            return;
+        }
+
+        if(typeof mapped === 'string' && mapped.includes(';')) {
+            for(const part of mapped.split(';')) {
+                const cmd = part.trim();
+                if(cmd) this.send(cmd);
+            }
+        } else if(typeof mapped === 'string') {
+            this.send(mapped);
+        } else {
+            this.send(trimmed);
+        }
+
         i.value = '';
         i.focus();
     }
+
     log(m) { 
         const c = document.getElementById('console'); 
         const d = document.createElement('div'); 
