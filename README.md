@@ -61,6 +61,6 @@ Free for all Flipper projects
 CREATOR: FunpaySmartBot
 
 ROADMAP: Download | Bulk ops | Drag-drop | Themes
-VERSION: v5.4 - Ultimate Flipper companion 🚀
+VERSION: v5.3 - Ultimate Flipper companion 🚀
 
 ⭐ Star if useful! Works with ALL RPC firmwares!
