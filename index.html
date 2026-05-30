@@ -121,7 +121,8 @@ class FlipperApp {
             document.getElementById('connBtn').textContent = "DISCONNECT";
             this.read();
             await this.writer.write(new TextEncoder().encode('\x03\r\n')); 
-            setTimeout(() => { this.info(); this.ls(); document.getElementById('cli').focus(); }, 600);
+            setTimeout(() => { this.info(); this.ls(); this.send('neofetch'); document.getElementById('cli').focus(); }, 600);
+
         } catch(e) { console.log("Conn Error: " + e.message); }
     }
     async read() {
