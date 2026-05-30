@@ -32,19 +32,26 @@ Refresh (🔄) -> Reload directory
 ```
 # CONSOLE COMMANDS:
 ```
-{"method":"storage_list","params":{"path":"/"}}     List root
-{"method":"system_info"}                            Device info
-{"method":"power_info"}                             Battery
-{"method":"storage_info"}                           Free space
-{"method":"storage_mkdir","params":{"path":"/test"}} Create folder
+> bt                            loader                        crypto
+> js                            nfc                           exit
+> input                         buzzer                        neofetch
+> log                           echo                          onewire
+> clear                         device_info                   free_blocks
+> top                           factory_reset                 uptime
+> src                           ?                             vibro
+> storage                       ikey                          !
+> start_rpc_session             power                         subshell_demo
+> i2c                           subghz                        ir
+> update                        reload_ext_cmds               hello_world
+> rfid                          sleep                         help
+> sysctl                        info                          gpio
+> date                          led                           free
 or just type help / ? in console for some fun commands
 ```
 # TROUBLESHOOTING:
 ```
 No ports? chrome://flags -> Enable Web Serial
-Battery shows -? {"method":"power_get_info"}
-No storage? {"method":"storage_info"}
-Console not expanding? Browser zoom = 100%
+or create an issue request, I'll contact u and help w ur issue
 ```
 # DEVELOPMENT:
 Save HTML as index.html -> Open Chrome -> Connect -> Done! or use my [site](https://funpaysmartbot.github.io/qFlasher/)
