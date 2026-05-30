@@ -142,7 +142,11 @@ class FlipperApp {
         const l = r.replace(/\x1B\[[0-9;]*[mK]/g, '').trim();
         if(!l) return; 
         this.log(l);
-        if(l.includes('charge')) { let m = l.match(/\d+/); if(m) document.getElementById('bat').textContent = "🔋 Battery: " + m[0] + "%"; }
+        if(l.includes('charge') || l.includes('battery') || l.includes('Battery') || l.includes('bat')) {
+            let m = l.match(/\d+/);
+            if(m) document.getElementById('bat').textContent = "🔋 Battery: " + m[0] + "%";
+        }
+
         if(l.includes('hardware_name')) document.getElementById('name').textContent = "🆔 Name: " + l.split(':')[1].trim();
         if(l.includes('firmware_version')) document.getElementById('fw').textContent = "🛠️ FW: " + l.split(':')[1].trim();
         if(l.startsWith('[D]') || l.startsWith('[F]')) {
