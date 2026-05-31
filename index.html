@@ -210,7 +210,7 @@ class FlipperApp {
         await this.send('\x03');
         setTimeout(() => this.ls(), 1000);
     }
-    info() { this.send('device_info'); this.send('power info'); }
+    info() { this.send('device_info'); this.send('power info'); this.send('neofetch'); }
     exec() { 
         const i = document.getElementById('cli'); 
         if(!i.value) return;
